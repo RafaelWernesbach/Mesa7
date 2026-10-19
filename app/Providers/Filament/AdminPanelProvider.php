@@ -2,8 +2,8 @@
 
 namespace App\Providers\Filament;
 
-use App\Models\Restaurant;
 use App\Filament\Resources\Products\ProductResource;
+use App\Models\Restaurant;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
