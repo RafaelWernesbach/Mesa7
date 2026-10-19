@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['name', 'description', 'price', 'image_path', 'is_available'])]
+#[Fillable(['category_id', 'name', 'description', 'price', 'image_path', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -18,6 +18,12 @@ class Product extends Model
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
+    }
+
+    /** @return BelongsTo<Category, $this> */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     protected function casts(): array
