@@ -196,7 +196,15 @@ Entre em `http://localhost:8000/admin/mesa7-demo` com:
 - E-mail: `test@example.com`
 - Senha: `password`
 
-No painel, abra **Produtos** para cadastrar, editar, filtrar por disponibilidade ou excluir produtos. Essas credenciais são somente para desenvolvimento local; não as use em produção.
+O seed tambem cria o tenant `cantina-da-praca`. O usuario `test@example.com` esta vinculado aos dois estabelecimentos; cada tenant tem varios usuarios e pelo menos 20 produtos demonstrativos.
+
+Usuarios adicionais para testar os vinculos:
+
+- `ana@mesa7.demo` - senha `password`; vinculada aos dois estabelecimentos.
+- `bruno@mesa7.demo` - senha `password`; equipe da Mesa7 Demo.
+- `carla@mesa7.demo` - senha `password`; equipe da Cantina da Praca.
+
+Essas credenciais sao somente para desenvolvimento local; nao as use em producao.
 
 ## Comandos uteis
 
