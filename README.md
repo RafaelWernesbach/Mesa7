@@ -182,6 +182,22 @@ npm run dev
 - `/settings/security` - seguranca e passkeys
 - `/settings/appearance` - aparencia
 
+## Painel administrativo de produtos
+
+Crie os dados locais de demonstração e habilite o acesso público às imagens enviadas:
+
+```powershell
+php artisan db:seed
+php artisan storage:link
+```
+
+Entre em `http://localhost:8000/admin/mesa7-demo` com:
+
+- E-mail: `test@example.com`
+- Senha: `password`
+
+No painel, abra **Produtos** para cadastrar, editar, filtrar por disponibilidade ou excluir produtos. Essas credenciais são somente para desenvolvimento local; não as use em produção.
+
 ## Comandos uteis
 
 ```powershell

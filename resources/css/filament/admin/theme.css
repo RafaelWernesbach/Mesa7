@@ -1,0 +1,14 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+:root {
+    --gray-50: #F7F4EF !important;
+    --gray-100: #F1ECE3 !important;
+    --gray-200: #E8DDC6 !important;
+    --gray-300: #D6C9B2 !important;
+    --primary-500: #EA845D !important;
+    --primary-600: #E36A3C !important;
+    --primary-700: #C6532D !important;
+}
