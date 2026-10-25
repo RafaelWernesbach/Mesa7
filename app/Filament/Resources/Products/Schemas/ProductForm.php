@@ -4,10 +4,13 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 
 class ProductForm
 {
@@ -19,6 +22,24 @@ class ProductForm
                     ->label('Nome')
                     ->required()
                     ->maxLength(255),
+                Select::make('category_id')
+                    ->label('Categoria')
+                    ->relationship(
+                        name: 'category',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query
+                            ->where('restaurant_id', Filament::getTenant()->getKey())
+                            ->orderBy('sort_order')
+                            ->orderBy('name'),
+                    )
+                    ->rules([
+                        Rule::exists('categories', 'id')
+                            ->where('restaurant_id', Filament::getTenant()->getKey()),
+                    ])
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->placeholder('Sem categoria'),
                 Textarea::make('description')
                     ->label('Descrição')
                     ->rows(4)

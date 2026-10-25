@@ -1,0 +1,137 @@
+erDiagram
+    %% Modelo lógico completo previsto na arquitetura; não representa tipos SQL físicos.
+    %% Entrega atual: usuários, estabelecimentos, vínculos, produtos, categorias, mesas e cardápio público por QR.
+    %% Fases futuras: pedidos e itens de pedido.
+    %% restaurant_domains é uma tabela opcional futura, ainda sem definição completa.
+    %% Os atributos mantêm os nomes técnicos usados no código.
+
+    USUARIOS {
+        identificador id PK
+        texto name
+        texto email UK
+        data_hora email_verified_at "opcional"
+        texto password
+        texto remember_token "opcional"
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    ESTABELECIMENTOS {
+        identificador id PK
+        texto name
+        texto slug UK "identificador amigável na URL"
+        texto description "opcional"
+        texto phone "opcional"
+        texto whatsapp "opcional"
+        texto logo_path "opcional"
+        texto primary_color "opcional"
+        texto secondary_color "opcional"
+        booleano is_active
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    USUARIO_ESTABELECIMENTO {
+        identificador id PK
+        identificador restaurant_id FK
+        identificador user_id FK
+        papel role "owner (proprietário), manager (gerente), kitchen (cozinha)"
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    CATEGORIAS {
+        identificador id PK
+        identificador restaurant_id FK
+        texto name
+        texto slug
+        texto description "opcional"
+        inteiro sort_order
+        booleano is_active
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    PRODUTOS {
+        identificador id PK
+        identificador restaurant_id FK
+        identificador category_id FK "opcional"
+        texto name
+        texto description "opcional"
+        valor_monetario price
+        texto image_path "opcional"
+        booleano is_available
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    MESAS {
+        identificador id PK
+        identificador restaurant_id FK
+        texto name
+        texto code "único no estabelecimento; identificação interna"
+        uuid uuid UK "identificador público do QR Code"
+        booleano is_active
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    PEDIDOS {
+        identificador id PK
+        identificador restaurant_id FK
+        identificador restaurant_table_id FK "opcional"
+        texto public_id UK "código não sequencial para o cliente"
+        origem_pedido source "table (mesa), delivery (entrega), pickup (retirada)"
+        situacao_pedido status "new (novo), preparing (em preparo), ready (pronto), completed (concluído), cancelled (cancelado)"
+        texto customer_name "opcional"
+        texto customer_phone "opcional"
+        texto delivery_address "opcional"
+        texto notes "opcional"
+        valor_monetario subtotal
+        valor_monetario delivery_fee "padrão zero"
+        valor_monetario total
+        data_hora placed_at
+        data_hora completed_at "opcional"
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    ITENS_PEDIDO {
+        identificador id PK
+        identificador order_id FK
+        identificador product_id FK "opcional"
+        texto product_name "cópia histórica"
+        valor_monetario unit_price "cópia histórica"
+        inteiro quantity
+        texto notes "opcional"
+        valor_monetario line_total
+        data_hora created_at
+        data_hora updated_at
+    }
+
+    DOMINIOS_ESTABELECIMENTO {
+        identificador id PK
+        identificador restaurant_id FK
+        texto domain UK "tabela opcional futura"
+    }
+
+    ESTABELECIMENTOS ||--o{ USUARIO_ESTABELECIMENTO : possui_vinculos
+    USUARIOS ||--o{ USUARIO_ESTABELECIMENTO : participa
+    ESTABELECIMENTOS ||--o{ CATEGORIAS : possui
+    ESTABELECIMENTOS ||--o{ PRODUTOS : oferece
+    CATEGORIAS o|--o{ PRODUTOS : organiza
+    ESTABELECIMENTOS ||--o{ MESAS : possui
+    ESTABELECIMENTOS ||--o{ PEDIDOS : recebe
+    MESAS o|--o{ PEDIDOS : identifica_mesa
+    PEDIDOS ||--|{ ITENS_PEDIDO : contem
+    PRODUTOS o|--o{ ITENS_PEDIDO : referencia
+    ESTABELECIMENTOS ||--o{ DOMINIOS_ESTABELECIMENTO : pode_configurar
+
+    %% Restrições e regras de integridade:
+    %% USUARIO_ESTABELECIMENTO: UNIQUE (restaurant_id, user_id).
+    %% MESAS: UNIQUE (restaurant_id, code).
+    %% MESAS.uuid é obrigatório, único globalmente e usado na URL pública do QR.
+    %% Todo produto, categoria, mesa e pedido pertence a um único estabelecimento.
+    %% A categoria do produto e a mesa do pedido devem pertencer ao mesmo estabelecimento.
+    %% ITENS_PEDIDO.produto_id pode ser nulo; nome e preço preservam cópias do momento do pedido.
+    %% Origem e situação do pedido aceitam somente os valores descritos acima.

@@ -26,6 +26,8 @@ class ProductResource extends Resource
 
     protected static ?string $navigationLabel = 'Produtos';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Catálogo';
+
     public static function getTenantOwnershipRelationshipName(): string
     {
         return 'restaurant';

@@ -3,6 +3,7 @@
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Restaurant;
 use App\Models\User;
@@ -27,10 +28,16 @@ function useProductTenant(Restaurant $restaurant): void
 
 it('completes the product create update and delete flow for the active tenant', function () {
     useProductTenant($this->restaurant);
+    $category = Category::query()->create([
+        'restaurant_id' => $this->restaurant->id,
+        'name' => 'Lanches',
+        'slug' => 'lanches',
+    ]);
 
     Livewire::test(CreateProduct::class)
         ->fillForm([
             'name' => 'Hambúrguer da Casa',
+            'category_id' => $category->id,
             'description' => 'Pão, queijo e molho especial',
             'price' => '32.90',
             'is_available' => true,
@@ -41,6 +48,7 @@ it('completes the product create update and delete flow for the active tenant', 
     $product = Product::query()->where('name', 'Hambúrguer da Casa')->firstOrFail();
 
     expect($product->restaurant_id)->toBe($this->restaurant->id)
+        ->and($product->category_id)->toBe($category->id)
         ->and($product->price)->toBe('32.90');
 
     Livewire::test(EditProduct::class, ['record' => $product->getKey()])
@@ -55,6 +63,34 @@ it('completes the product create update and delete flow for the active tenant', 
         ->callAction(DeleteAction::class);
 
     $this->assertDatabaseMissing(Product::class, ['id' => $product->getKey()]);
+});
+
+it('only offers and accepts categories belonging to the active tenant', function () {
+    $ownCategory = Category::query()->create([
+        'restaurant_id' => $this->restaurant->id,
+        'name' => 'Lanches',
+        'slug' => 'lanches',
+    ]);
+    $otherRestaurant = Restaurant::factory()->create();
+    $otherCategory = Category::query()->create([
+        'restaurant_id' => $otherRestaurant->id,
+        'name' => 'Bebidas',
+        'slug' => 'bebidas',
+    ]);
+
+    useProductTenant($this->restaurant);
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'name' => 'Produto com categoria externa',
+            'category_id' => $otherCategory->id,
+            'price' => '10.00',
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['category_id']);
+
+    expect(Product::query()->where('name', 'Produto com categoria externa')->exists())->toBeFalse()
+        ->and($ownCategory->restaurant_id)->toBe($this->restaurant->id);
 });
 
 it('validates required product name and positive price', function () {
@@ -103,7 +139,9 @@ it('allows only linked users to access a restaurant tenant', function () {
 });
 
 it('serves the tenant panel only to linked users', function () {
-    $this->get('/admin/'.$this->restaurant->slug)->assertOk();
+    $this->followingRedirects()
+        ->get('/admin/'.$this->restaurant->slug)
+        ->assertOk();
 
     $otherUser = User::factory()->create();
 

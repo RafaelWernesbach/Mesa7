@@ -30,6 +30,17 @@ it('seeds at least twenty products for every demo restaurant', function () {
     }
 });
 
+it('seeds categorized menus and active table codes for every demo restaurant', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    foreach (Restaurant::query()->withCount(['categories', 'tables'])->get() as $restaurant) {
+        expect($restaurant->categories_count)->toBeGreaterThan(0)
+            ->and($restaurant->tables_count)->toBeGreaterThan(0)
+            ->and($restaurant->products()->whereNull('category_id')->count())->toBe(0)
+            ->and($restaurant->tables()->where('code', 'M07')->where('is_active', true)->whereNotNull('uuid')->exists())->toBeTrue();
+    }
+});
+
 it('can be rerun without duplicating demo memberships or products', function () {
     $this->seed(DatabaseSeeder::class);
     $this->seed(DatabaseSeeder::class);

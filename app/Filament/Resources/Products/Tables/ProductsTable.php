@@ -24,6 +24,10 @@ class ProductsTable
                     ->label('Nome')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('category.name')
+                    ->label('Categoria')
+                    ->placeholder('Sem categoria')
+                    ->sortable(),
                 TextColumn::make('price')
                     ->label('Preço')
                     ->money('BRL')

@@ -2,6 +2,8 @@
 
 Aplicacao Laravel com Livewire, Fortify, Flux, Tailwind CSS e Vite. O projeto usa SQLite por padrao para facilitar a execucao local.
 
+Documentacao operacional e tecnica: [docs/README.md](docs/README.md).
+
 ## Requisitos
 
 - PHP `^8.3` com extensoes comuns do Laravel habilitadas: `pdo`, `pdo_sqlite`, `sqlite3`, `mbstring`, `openssl`, `ctype`, `fileinfo`, `tokenizer`, `xml`, `curl` e `zip`.
@@ -181,8 +183,11 @@ npm run dev
 - `/settings/profile` - perfil do usuario autenticado
 - `/settings/security` - seguranca e passkeys
 - `/settings/appearance` - aparencia
+- `/r/{slug}` - cardapio publico do estabelecimento
+- `/r/{slug}/cardapio/{uuid}` - cardapio publico associado ao QR de uma mesa ativa
+- `/r/{slug}/mesa/{codigo}` - rota legada do cardapio por codigo da mesa
 
-## Painel administrativo de produtos
+## Painel administrativo
 
 Crie os dados locais de demonstração e habilite o acesso público às imagens enviadas:
 
@@ -197,6 +202,17 @@ Entre em `http://localhost:8000/admin/mesa7-demo` com:
 - Senha: `password`
 
 O seed tambem cria o tenant `cantina-da-praca`. O usuario `test@example.com` esta vinculado aos dois estabelecimentos; cada tenant tem varios usuarios e pelo menos 20 produtos demonstrativos.
+
+No painel do tenant, **Produtos** e **Categorias** ficam em Catálogo. O resource **Mesas** permite cadastrar mesas e abrir a acao **QR Code** para ver ou imprimir o cardapio daquela mesa. Cada QR usa o UUID publico da mesa.
+
+Os menus demonstrativos sao organizados por categorias e cada estabelecimento possui mesas ativas de exemplo. Com o servidor local iniciado, acesse:
+
+- `http://localhost:8000/r/mesa7-demo`
+- `http://localhost:8000/r/cantina-da-praca`
+
+O endereco com UUID e mostrado na pagina de QR Code de cada mesa. A rota antiga por codigo continua disponivel durante a transicao.
+
+O menu publico e somente para consulta nesta etapa; carrinho, checkout e criacao de pedidos ainda nao estao habilitados.
 
 Usuarios adicionais para testar os vinculos:
 
