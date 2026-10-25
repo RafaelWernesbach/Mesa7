@@ -48,8 +48,9 @@ flowchart LR
 
 - `ProductResource`: nome, categoria opcional, descrição, preço, imagem e disponibilidade; lista preço, categoria e disponibilidade.
 - `CategoryResource`: nome, slug, descrição, ordem no menu e estado ativo.
-- `RestaurantTableResource`: nome, código interno e estado ativo; ação **QR Code** abre `ViewRestaurantTableQrCode` em nova página.
-- `ViewRestaurantTableQrCode`: gera a URL nomeada `public.menu.table`, renderiza SVG com `chillerlan/php-qrcode` e apresenta uma página pronta para impressão.
+- `RestaurantTableResource`: nome, código interno e estado ativo; ação **QR Code** abre uma nova aba HTML independente.
+- `RestaurantTableQrCodeController`: autoriza owner/manager, busca a mesa dentro do estabelecimento e gera a imagem SVG do endereço público.
+- `resources/views/admin/restaurant-tables/qr-code.blade.php`: exibe estabelecimento, mesa, código interno, URL, imagem QR e ação de impressão pelo navegador.
 
 Os três recursos declaram `restaurant` como relacionamento de posse do tenant. O Filament filtra seus registros pelo estabelecimento selecionado; políticas validam adicionalmente papel e propriedade ao acessar ou alterar um registro.
 

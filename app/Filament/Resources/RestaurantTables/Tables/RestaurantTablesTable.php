@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\RestaurantTables\Tables;
 
-use App\Filament\Resources\RestaurantTables\RestaurantTableResource;
 use App\Models\RestaurantTable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -43,8 +42,9 @@ class RestaurantTablesTable
                     ->label('QR Code')
                     ->icon(Heroicon::OutlinedQrCode)
                     ->visible(fn (RestaurantTable $record): bool => $record->is_active)
-                    ->url(fn (RestaurantTable $record): string => RestaurantTableResource::getUrl('qr-code', [
-                        'record' => $record,
+                    ->url(fn (RestaurantTable $record): string => route('admin.restaurant-tables.qr-code', [
+                        'restaurant' => $record->restaurant->slug,
+                        'table' => $record->getKey(),
                     ]), shouldOpenInNewTab: true),
                 EditAction::make(),
             ])

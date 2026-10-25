@@ -5,7 +5,6 @@ namespace App\Filament\Resources\RestaurantTables;
 use App\Filament\Resources\RestaurantTables\Pages\CreateRestaurantTable;
 use App\Filament\Resources\RestaurantTables\Pages\EditRestaurantTable;
 use App\Filament\Resources\RestaurantTables\Pages\ListRestaurantTables;
-use App\Filament\Resources\RestaurantTables\Pages\ViewRestaurantTableQrCode;
 use App\Filament\Resources\RestaurantTables\Schemas\RestaurantTableForm;
 use App\Filament\Resources\RestaurantTables\Tables\RestaurantTablesTable;
 use App\Models\RestaurantTable;
@@ -52,7 +51,6 @@ class RestaurantTableResource extends Resource
             'index' => ListRestaurantTables::route('/'),
             'create' => CreateRestaurantTable::route('/create'),
             'edit' => EditRestaurantTable::route('/{record}/edit'),
-            'qr-code' => ViewRestaurantTableQrCode::route('/{record}/qr-code'),
         ];
     }
 }

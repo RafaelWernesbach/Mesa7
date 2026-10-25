@@ -69,8 +69,8 @@ No painel, abra **Salão → Mesas** e escolha **Criar mesa**.
 1. Informe um nome para exibição, como `Mesa 08`.
 2. Defina um código interno legível, como `M08`. O código precisa ser único dentro daquele estabelecimento.
 3. Deixe **Mesa ativa** ligado e salve.
-4. Na listagem, use a ação **QR Code** da mesa. Ela abre uma página com o QR e a URL pública.
-5. Use **Imprimir QR Code** para imprimir a página ou copie/abra a URL para testar.
+4. Na listagem, use a ação **QR Code** da mesa. Ela abre uma página HTML independente, em nova aba, com os dados da mesa, o QR e a URL pública.
+5. Se quiser imprimir, use **Imprimir** na página ou o comando de impressão do navegador. A tela não abre a pré-visualização automaticamente.
 
 O UUID usado no QR é gerado pelo sistema. Não é necessário preenchê-lo. Cada QR aponta para `/r/{slug-do-estabelecimento}/cardapio/{uuid-da-mesa}`. O endereço completo usa o domínio da aplicação; em produção, configure o domínio e HTTPS antes de gerar os materiais impressos.
 

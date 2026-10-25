@@ -3,7 +3,6 @@
 use App\Filament\Resources\RestaurantTables\Pages\CreateRestaurantTable;
 use App\Filament\Resources\RestaurantTables\Pages\EditRestaurantTable;
 use App\Filament\Resources\RestaurantTables\Pages\ListRestaurantTables;
-use App\Filament\Resources\RestaurantTables\Pages\ViewRestaurantTableQrCode;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
@@ -66,21 +65,30 @@ it('lists only the active tenant tables and rejects another tenant table URL', f
         ->assertNotFound();
 });
 
-it('opens an authorized QR page containing the public UUID menu URL and SVG', function () {
+it('opens an authorized standalone QR page with the image and public UUID menu URL', function () {
     $table = $this->restaurant->tables()->create(['name' => 'Mesa QR', 'code' => 'M07']);
-
-    useRestaurantTableTenant($this->restaurant);
 
     $url = route('public.menu.table', [$this->restaurant->slug, $table->uuid]);
 
-    Livewire::test(ViewRestaurantTableQrCode::class, ['record' => $table->getKey()])
+    $response = $this->get(route('admin.restaurant-tables.qr-code', [$this->restaurant->slug, $table->getKey()]));
+
+    $response
+        ->assertOk()
         ->assertSee($url)
-        ->assertSee('<svg', false)
-        ->assertSee('Mesa QR');
+        ->assertSee('<img', false)
+        ->assertSee('src="data:image/svg+xml;base64,', false)
+        ->assertSee('Mesa QR')
+        ->assertSee($this->restaurant->name);
+
+    preg_match('/<img[^>]+src="data:image\/svg\+xml;base64,([^"]+)"/', $response->getContent(), $matches);
+    $svg = isset($matches[1]) ? base64_decode($matches[1], true) : false;
+
+    expect($svg)->toBeString();
+    expect($svg)->toContain('<svg');
 
     $table->update(['is_active' => false]);
 
-    Livewire::test(ViewRestaurantTableQrCode::class, ['record' => $table->getKey()])
+    $this->get(route('admin.restaurant-tables.qr-code', [$this->restaurant->slug, $table->getKey()]))
         ->assertNotFound();
 });
 
@@ -94,6 +102,10 @@ it('does not allow a kitchen member to manage tables or view their QR', function
     expect($kitchenUser->can('viewAny', RestaurantTable::class))->toBeFalse()
         ->and($kitchenUser->can('create', RestaurantTable::class))->toBeFalse()
         ->and($kitchenUser->can('view', $table))->toBeFalse();
+
+    $this->actingAs($kitchenUser)
+        ->get(route('admin.restaurant-tables.qr-code', [$this->restaurant->slug, $table->getKey()]))
+        ->assertForbidden();
 });
 
 it('validates duplicate table codes within the active restaurant', function () {
