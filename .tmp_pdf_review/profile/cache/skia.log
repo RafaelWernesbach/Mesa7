@@ -1,0 +1,8 @@
+RenderMethod: vulkan
+Vendor: 0x1002
+Device: 0x1638
+API: 1.3.217
+Driver: 2.0.233
+DeviceType: integrated
+DeviceName: AMD Radeon(TM) Graphics
+Blacklisted: no
