@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Restaurant;
 use App\Models\User;
 
 test('guests are redirected to the login page', function () {
@@ -7,10 +8,17 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the dashboard', function () {
+test('authenticated catalog managers are redirected to their product resource', function () {
     $user = User::factory()->create();
+    $restaurant = Restaurant::factory()->create();
+    $restaurant->users()->attach($user, ['role' => 'owner']);
+
     $this->actingAs($user);
 
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
+    $this->get(route('dashboard'))
+        ->assertRedirect(route('filament.admin.resources.products.index', ['tenant' => $restaurant->slug]));
+});
+
+test('the public home sends administrators to the panel login', function () {
+    $this->get(route('home'))->assertRedirect('/admin/login');
 });

@@ -1,6 +1,6 @@
 # Mesa7 — Especificação de Produto e Arquitetura para Implementação
 
-> Documento-base do produto e referência para implementação incremental.<br>
+> Documento-base do produto e referência para implementação incremental.
 > Projeto acadêmico — Laboratório de Engenharia de Software — 2026/2.
 
 ---
@@ -69,7 +69,7 @@ Delivery ───────────┼──> Pedido ──> Painel opera
 Retirada ───────────┘
 ```
 
-O QR Code é apenas um canal de entrada.<br>
+O QR Code é apenas um canal de entrada.
 O **núcleo do sistema é o pedido unificado**.
 
 ---
@@ -452,7 +452,7 @@ Regras:
 - o tenant é atribuído no servidor a partir do contexto autorizado, nunca de um `restaurant_id` livremente enviado pelo formulário;
 - nome e preço são obrigatórios; descrição e imagem são opcionais;
 - preço é armazenado como `decimal(10,2)` e validado no servidor;
-- `category_id` é opcional; categorias são usadas para organizar a visualização pública, mas seu CRUD administrativo continua futuro.
+- `category_id` é opcional; categorias organizam o cardápio público e podem ser gerenciadas no painel do estabelecimento.
 
 ## 10.4 RestaurantTable
 
@@ -607,7 +607,7 @@ Category
 
 Product
  ├── belongsTo Restaurant
- └── belongsTo Category (a partir da fase de categorias)
+ └── belongsTo Category (opcional)
 
 RestaurantTable
  ├── belongsTo Restaurant
@@ -680,7 +680,7 @@ Exibir apenas restaurantes ativos, categorias ativas e produtos disponíveis. O 
 ## 13.2 Contexto de mesa (pedido futuro)
 
 ```text
-QR Code (geração futura)
+QR Code da mesa
   ↓
 /r/burger-do-ze/cardapio/{uuid-da-mesa}
   ↓
@@ -853,17 +853,17 @@ A camada de UI não deve simplesmente atribuir qualquer status recebido.
 
 O painel administrativo será implementado com Filament e exigirá autenticação. O tenant do painel será um `Restaurant`; cada usuário só poderá selecionar restaurantes aos quais esteja vinculado.
 
-O único recurso administrativo de negócio desta etapa será Produtos. A navegação não deve antecipar links para pedidos, mesas, categorias ou configurações ainda não implementados. O cardápio público é uma tela Blade independente do painel.
+Os recursos administrativos desta entrega são Produtos, Categorias e Mesas. O tenant é um `Restaurant`, selecionado entre os estabelecimentos aos quais o usuário está vinculado. O cardápio público é uma tela Blade independente do painel.
 
-URL conceitual:
+URL do painel:
 
 ```text
-/painel/restaurantes/{restaurant:slug}
+/admin/{restaurant:slug}
 ```
 
 O painel pode permitir a seleção de outro tenant autorizado pelo usuário. A resolução da URL/tenant e a autorização de acesso devem ser aplicadas no servidor.
 
-Navegação administrativa: Produtos.
+Navegação administrativa: Catálogo (Produtos e Categorias) e Salão (Mesas). Não exibir dashboard operacional ou links para pedidos nesta entrega.
 
 ---
 
@@ -896,7 +896,7 @@ Informações mínimas por pedido:
 - total;
 - ações de mudança de status.
 
-Para o MVP, usar Livewire polling com intervalo razoável.
+Este dashboard operacional pertence a uma fase futura e não faz parte da tela inicial desta entrega.
 
 ---
 
@@ -945,7 +945,7 @@ Mesa 07
 /r/burger-do-ze/mesa/M07
 ```
 
-A geração visual do QR pode ser adicionada após o fluxo estar pronto.
+Cada mesa ativa possui UUID público. A ação administrativa gera uma página HTML independente, com o QR, as informações da mesa e a URL pública por UUID. A página permite imprimir pelo navegador. O QR abre o cardápio no contexto da mesa e não cria pedido.
 
 ---
 
@@ -1286,17 +1286,19 @@ php artisan migrate:fresh --seed
 
 ## Evolução por fases
 
-O cardápio público da Fase 3 é antecipado para a entrega atual, junto ao CRUD de produtos. Checkout, pedidos e operação continuam fases futuras.
+As Fases 1 e 2 formam a base implementada. A entrega atual inclui o catálogo administrativo, o cardápio público e o QR de mesa. Checkout, pedidos e operação continuam fases futuras.
 
-### Fase 3 — Cardápio público (incluída na entrega atual)
+### Fase 3 — Catálogo e cardápio público (entrega atual)
 
+- CRUD multi-tenant de categorias e mesas no Filament;
+- UUID público e página de impressão de QR Code para mesas ativas;
 - rota pública por slug do estabelecimento;
 - visualização de categorias ativas e produtos disponíveis;
 - rota pública por slug e UUID da mesa;
 - views Blade com apresentação responsiva;
 - consultas sempre limitadas ao estabelecimento resolvido.
 
-Não inclui carrinho, checkout ou criação de pedidos. Categorias e mesas são gerenciadas no painel; o QR abre somente o cardápio público.
+Não inclui carrinho, checkout, criação de pedidos ou painel operacional. O QR abre somente o cardápio público.
 
 ### Fase 4 — Checkout
 
@@ -1315,14 +1317,7 @@ Não inclui carrinho, checkout ou criação de pedidos. Categorias e mesas são 
 - filtros simples;
 - polling.
 
-### Fase 6 — Mesas e QR
-
-- CRUD administrativo de mesas no tenant;
-- UUID público por mesa e geração/impressão de QR Code;
-- rota do QR renderiza o cardápio no contexto da mesa;
-- pedido automaticamente vinculado.
-
-### Fase 7 — Refinamento
+### Fase 6 — Refinamento futuro
 
 - UI;
 - identidade Mesa7;
@@ -1347,7 +1342,9 @@ Esta entrega é considerada funcional quando:
 8. um cliente consulta o menu de um estabelecimento ativo sem autenticação;
 9. produtos indisponíveis e categorias inativas não aparecem;
 10. URL com UUID de mesa exibe o mesmo cardápio e só aceita mesa ativa do estabelecimento informado;
-11. a visualização pública não cria pedido nem aceita identificadores de tenant enviados livremente pelo cliente.
+11. categorias e mesas são gerenciadas no tenant autorizado, com as permissões previstas;
+12. a página do QR mostra um código legível e imprimível, associado à URL pública da mesa;
+13. a visualização pública não cria pedido nem aceita identificadores de tenant enviados livremente pelo cliente.
 
 ---
 
@@ -1389,7 +1386,7 @@ Ao implementar:
 8. evitar lógica de negócio em Blade;
 9. evitar componentes Livewire gigantes;
 10. evitar overengineering;
-11. limitar o painel administrativo ao acesso do tenant e ao cadastro de produtos; manter o menu público somente para leitura;
+11. limitar o painel administrativo aos recursos previstos nesta entrega (produtos, categorias e mesas); manter o menu público somente para leitura;
 12. preservar isolamento multi-tenant em todas as queries;
 13. escrever testes para regras críticas;
 14. manter `composer test` verde;
@@ -1513,20 +1510,20 @@ O produto deve ser entendido como:
 
 > **uma plataforma própria de pedidos e operação digital para restaurantes.**
 
-O QR Code é um canal.<br>
-Delivery é um canal.<br>
-Retirada é um canal.<br>
-O cardápio é a interface de venda.<br>
-O painel é a interface operacional.<br>
-O pedido é o núcleo do domínio.<br>
-O multi-tenancy é a base arquitetural.<br>
+O QR Code é um canal.
+Delivery é um canal.
+Retirada é um canal.
+O cardápio é a interface de venda.
+O painel é a interface operacional.
+O pedido é o núcleo do domínio.
+O multi-tenancy é a base arquitetural.
 O SaaS é a visão de negócio.
 
 ---
 
 # 40. Resumo executivo da entrega atual
 
-Implementar primeiro:
+Escopo concluído nesta entrega:
 
 ```text
 AUTHENTICATION
@@ -1535,9 +1532,11 @@ TENANT ADMIN (RESTAURANT)
 +
 FILAMENT PANEL
 +
-PRODUCT RESOURCE (CRUD)
+PRODUCT, CATEGORY AND TABLE RESOURCES
 +
 PUBLIC MENU (READ-ONLY)
++
+TABLE QR CODE (PRINTABLE)
 ```
 
 Fluxo desta entrega:
@@ -1551,10 +1550,12 @@ Seleciona um restaurante autorizado
   ↓
 Cadastro de produtos
   ↓
+Cadastro de categorias e mesas
+  ↓
 Cardápio público por slug ou UUID da mesa
 ```
 
-Pedidos, checkout, gestão administrativa de categorias e mesas, geração de QR e operação pertencem a fases futuras. A entrega atual estará concluída quando CRUD e cardápio público funcionarem com validação, autorização, isolamento multi-tenant e testes.
+Pedidos, checkout e operação pertencem a fases futuras. A entrega atual inclui os CRUDs de produtos, categorias e mesas, o cardápio público e a página imprimível do QR; deve funcionar com validação, autorização, isolamento multi-tenant e testes.
 
 ---
 
@@ -1562,7 +1563,7 @@ Pedidos, checkout, gestão administrativa de categorias e mesas, geração de QR
 
 ## composer.json
 
-A implementação deve respeitar o `composer.json` atual do projeto e adicionar Filament como dependência necessária do painel administrativo. A base atual inclui:
+A implementação deve respeitar o `composer.json` atual do projeto, que já inclui Filament para o painel administrativo. A base atual inclui:
 
 ```text
 PHP ^8.3
@@ -1571,7 +1572,7 @@ Livewire 4.1
 Livewire Flux 2.13
 Livewire Blaze 1.0
 Laravel Fortify 1.37
-Filament (painel administrativo; versão compatível a definir na implementação)
+Filament 5 (painel administrativo)
 Pest 5
 Larastan 3.9
 Pint 1.27
