@@ -10,5 +10,14 @@
             <p>{{ $product->description }}</p>
         @endif
     </div>
-    <span class="product-item__price">R$ {{ number_format((float) $product->price, 2, ',', '.') }}</span>
+    <span class="product-item__price">{{ \App\Support\Money::formatBrazilian((string) $product->price) }}</span>
+    @if ($table)
+        <form class="product-item__actions" method="POST" action="{{ route('public.orders.cart.items.store', ['restaurant' => $restaurant->slug, 'uuid' => $table->uuid]) }}">
+            @csrf
+            <input type="hidden" name="product_id" value="{{ $product->getKey() }}">
+            <label class="sr-only" for="quantidade-produto-{{ $product->getKey() }}">Quantidade de {{ $product->name }}</label>
+            <input id="quantidade-produto-{{ $product->getKey() }}" class="quantity-input" type="number" name="quantity" min="1" max="99" value="1">
+            <button class="button button--small" type="submit">Adicionar</button>
+        </form>
+    @endif
 </article>

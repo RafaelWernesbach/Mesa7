@@ -8,10 +8,13 @@ it('seeds users with access to multiple restaurants and multiple users per resta
     $this->seed(DatabaseSeeder::class);
 
     $user = User::query()->where('email', 'test@example.com')->firstOrFail();
+    $attendant = User::query()->where('email', 'carla@mesa7.demo')->firstOrFail();
     $restaurants = Restaurant::query()->orderBy('slug')->get();
+    $demoRestaurant = Restaurant::query()->where('slug', 'mesa7-demo')->firstOrFail();
 
     expect($restaurants)->toHaveCount(2)
-        ->and($user->restaurants)->toHaveCount(2);
+        ->and($user->restaurants)->toHaveCount(2)
+        ->and($demoRestaurant->users()->whereKey($attendant->getKey())->first()?->pivot->role)->toBe('attendant');
 
     foreach ($restaurants as $restaurant) {
         expect($restaurant->users()->count())->toBeGreaterThanOrEqual(2);

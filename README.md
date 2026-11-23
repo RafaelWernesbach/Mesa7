@@ -185,6 +185,8 @@ npm run dev
 - `/settings/appearance` - aparencia
 - `/r/{slug}` - cardapio publico do estabelecimento
 - `/r/{slug}/cardapio/{uuid}` - cardapio publico associado ao QR de uma mesa ativa
+- `/r/{slug}/cardapio/{uuid}/carrinho` - carrinho da mesa; permite revisar, alterar e remover itens
+- `/r/{slug}/pedido/{codigo-publico}` - acompanhamento publico do pedido, sem login
 - `/r/{slug}/mesa/{codigo}` - rota legada do cardapio por codigo da mesa
 
 ## Painel administrativo
@@ -203,7 +205,7 @@ Entre em `http://localhost:8000/admin/mesa7-demo` com:
 
 O seed tambem cria o tenant `cantina-da-praca`. O usuario `test@example.com` esta vinculado aos dois estabelecimentos; cada tenant tem varios usuarios e pelo menos 20 produtos demonstrativos.
 
-No painel do tenant, **Produtos** e **Categorias** ficam em Catálogo. O resource **Mesas** permite cadastrar mesas e abrir a acao **QR Code** para ver ou imprimir o cardapio daquela mesa. Cada QR usa o UUID publico da mesa.
+No painel do tenant, **Produtos** e **Categorias** ficam em Catálogo. Em **Salão**, o resource **Mesas** permite cadastrar mesas e abrir a acao **QR Code** para ver ou imprimir o cardapio daquela mesa. O resource **Pedidos** lista a fila do estabelecimento, mostra itens e historico e permite avancar ou cancelar pedidos. Cada QR usa o UUID publico da mesa.
 
 Os menus demonstrativos sao organizados por categorias e cada estabelecimento possui mesas ativas de exemplo. Com o servidor local iniciado, acesse:
 
@@ -212,13 +214,13 @@ Os menus demonstrativos sao organizados por categorias e cada estabelecimento po
 
 O endereco com UUID e mostrado na pagina de QR Code de cada mesa. A rota antiga por codigo continua disponivel durante a transicao.
 
-O menu publico e somente para consulta nesta etapa; carrinho, checkout e criacao de pedidos ainda nao estao habilitados.
+O menu geral do estabelecimento e somente para consulta. Para comprar, abra o QR de uma mesa ativa: o carrinho e a confirmacao de pedido so ficam disponiveis nesse contexto. O pedido pode ser acompanhado pelo codigo publico sem conta de cliente.
 
 Usuarios adicionais para testar os vinculos:
 
 - `ana@mesa7.demo` - senha `password`; vinculada aos dois estabelecimentos.
 - `bruno@mesa7.demo` - senha `password`; equipe da Mesa7 Demo.
-- `carla@mesa7.demo` - senha `password`; equipe da Cantina da Praca.
+- `carla@mesa7.demo` - senha `password`; atendente da Mesa7 Demo e equipe de cozinha da Cantina da Praca.
 
 Essas credenciais sao somente para desenvolvimento local; nao as use em producao.
 
@@ -250,6 +252,8 @@ Esse script executa:
 - verificacao de estilo com Pint
 - analise estatica com PHPStan/Larastan
 - testes automatizados com Pest
+
+O CI tambem executa `composer coverage:orders`, que exige pelo menos 85% de cobertura nas Actions de pedidos. Para rodar localmente, instale uma extensao de cobertura compativel com PHPUnit, como PCOV ou Xdebug.
 
 ## Solucao de problemas
 

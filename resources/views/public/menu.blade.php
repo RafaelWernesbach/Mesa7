@@ -21,7 +21,12 @@
                 </a>
 
                 @if ($table)
-                    <p class="table-context"><span class="table-context__dot"></span>{{ $table->name }}</p>
+                    <div class="menu-header__actions">
+                        <p class="table-context"><span class="table-context__dot"></span>{{ $table->name }}</p>
+                        <a class="cart-link" href="{{ route('public.orders.cart', ['restaurant' => $restaurant->slug, 'uuid' => $table->uuid]) }}">
+                            Carrinho <span class="cart-link__count" aria-label="{{ $cartCount }} itens">{{ $cartCount }}</span>
+                        </a>
+                    </div>
                 @elseif ($restaurant->phone)
                     <a class="header-contact" href="tel:{{ preg_replace('/[^0-9+]/', '', $restaurant->phone) }}">{{ $restaurant->phone }}</a>
                 @endif
