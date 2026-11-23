@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
+use App\Support\PublicTableCart;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class PublicMenuController extends Controller
 {
-    public function show(Restaurant $restaurant): Response
+    public function show(Restaurant $restaurant, Request $request, PublicTableCart $cart): Response
     {
-        return $this->menuResponse($restaurant);
+        return $this->menuResponse($restaurant, $request, $cart);
     }
 
-    public function showForTable(Restaurant $restaurant, string $code): Response
+    public function showForTable(Restaurant $restaurant, string $code, Request $request, PublicTableCart $cart): Response
     {
         abort_unless($restaurant->is_active, 404);
 
@@ -24,10 +26,10 @@ class PublicMenuController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        return $this->menuResponse($restaurant, $table);
+        return $this->menuResponse($restaurant, $request, $cart, $table);
     }
 
-    public function showForTableUuid(Restaurant $restaurant, string $uuid): Response
+    public function showForTableUuid(Restaurant $restaurant, string $uuid, Request $request, PublicTableCart $cart): Response
     {
         abort_unless($restaurant->is_active, 404);
 
@@ -36,11 +38,15 @@ class PublicMenuController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        return $this->menuResponse($restaurant, $table);
+        return $this->menuResponse($restaurant, $request, $cart, $table);
     }
 
-    private function menuResponse(Restaurant $restaurant, ?RestaurantTable $table = null): Response
-    {
+    private function menuResponse(
+        Restaurant $restaurant,
+        Request $request,
+        PublicTableCart $cart,
+        ?RestaurantTable $table = null,
+    ): Response {
         abort_unless($restaurant->is_active, 404);
 
         $filterAvailableProducts = static function (Builder $query) use ($restaurant): void {
@@ -77,6 +83,7 @@ class PublicMenuController extends Controller
             'categories' => $categories,
             'uncategorizedProducts' => $uncategorizedProducts,
             'primaryColor' => $primaryColor,
+            'cartCount' => $table === null ? 0 : $cart->count($request, $restaurant, $table),
         ]);
     }
 }

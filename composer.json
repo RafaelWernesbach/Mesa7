@@ -63,10 +63,14 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "@test"
+            "@test",
+            "@coverage:orders"
+        ],
+        "coverage:orders": [
+            "pest --configuration=phpunit.orders.xml --coverage --min=85 --compact"
         ],
         "types:check": [
-            "phpstan analyse"
+            "phpstan analyse --memory-limit=512M"
         ],
         "test": [
             "@php artisan config:clear --ansi",

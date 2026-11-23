@@ -50,6 +50,7 @@ class DemoUsersAndRestaurantsSeeder extends Seeder
                 'test@example.com' => 'owner',
                 'ana@mesa7.demo' => 'manager',
                 'bruno@mesa7.demo' => 'kitchen',
+                'carla@mesa7.demo' => 'attendant',
             ],
             'cantina-da-praca' => [
                 'test@example.com' => 'manager',

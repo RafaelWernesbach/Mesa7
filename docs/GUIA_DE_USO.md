@@ -1,6 +1,6 @@
 # Guia de Uso
 
-Este guia descreve como administrar o catálogo e como testar a visualização pública do cardápio no contexto de uma mesa. O cardápio público é somente para consulta: pedidos, carrinho e checkout ainda não fazem parte deste fluxo.
+Este guia descreve como administrar o catálogo, gerar QR Codes, enviar um pedido presencial pela mesa e acompanhar seu andamento. O cliente não precisa criar uma conta; delivery, retirada e pagamento online não fazem parte do MVP.
 
 ## 1. Iniciar localmente
 
@@ -88,9 +88,28 @@ Mesas inativas não exibem a ação de QR, e suas URLs públicas retornam `404`.
 
 Como alternativa, o cardápio geral é acessível por `http://localhost:8000/r/mesa7-demo`. A rota legada `/r/{slug}/mesa/{codigo}` permanece disponível por compatibilidade; os novos QR Codes usam UUID.
 
+### Fazer um pedido pela mesa
+
+1. Abra o QR da mesa ou sua URL `/r/{slug}/cardapio/{uuid}`. O carrinho só é habilitado no contexto de uma mesa ativa.
+2. Em cada produto, escolha a quantidade e clique em **Adicionar**.
+3. Abra **Carrinho** para revisar os itens. Use **Atualizar** para alterar quantidades ou **Remover** para excluir um item.
+4. Escreva uma observação geral, se precisar, e clique em **Confirmar pedido**.
+5. A tela mostra o código público do pedido, os itens e o status atual. Guarde o link para consultar o andamento; enquanto estiver em preparo, a página atualiza a cada 15 segundos.
+
+O total é calculado no servidor com os preços vigentes quando o pedido é confirmado. Se um produto ficar indisponível antes da confirmação, revise o carrinho e remova-o. O MVP não coleta pagamento; o pagamento é feito diretamente no estabelecimento.
+
+### Operar os pedidos
+
+1. Entre no painel autenticado e selecione o estabelecimento.
+2. Abra **Salão → Pedidos**. A lista contém pedidos do tenant selecionado; **Detalhes** exibe itens, observações e o histórico.
+3. Use **Iniciar preparo** para aceitar um pedido pendente, **Marcar como pronto** após o preparo e **Finalizar atendimento** ao concluir.
+4. **Cancelar pedido** está disponível enquanto o pedido não estiver finalizado ou cancelado.
+
+As mudanças aparecem na página pública de acompanhamento. Cada mudança registra o status, o horário e o usuário da equipe que a realizou.
+
 ## 7. Papéis e acesso
 
-Os usuários vinculados a um estabelecimento podem selecionar aquele tenant no painel. As telas de gerenciamento de produtos, categorias e mesas são autorizadas para os papéis `owner` e `manager`; o papel `kitchen` não gerencia esses recursos.
+Os usuários vinculados a um estabelecimento podem selecionar aquele tenant no painel. Produtos, categorias e mesas são gerenciados pelos papéis `owner` e `manager`. Os papéis `owner`, `manager`, `attendant` e `kitchen` podem consultar e operar pedidos. `attendant` e `kitchen` não gerenciam o catálogo.
 
 ## 8. Problemas comuns
 

@@ -2,7 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Restaurant;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -26,7 +26,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->homeUrl(fn (): string => ProductResource::getUrl('index'))
+            ->homeUrl(fn (): string => OrderResource::getUrl('index'))
             ->login()
             ->tenant(Restaurant::class, slugAttribute: 'slug', ownershipRelationship: 'restaurants')
             ->colors([

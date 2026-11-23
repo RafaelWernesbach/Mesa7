@@ -1,7 +1,7 @@
 erDiagram
     %% Modelo lógico completo previsto na arquitetura; não representa tipos SQL físicos.
-    %% Entrega atual: usuários, estabelecimentos, vínculos, produtos, categorias, mesas e cardápio público por QR.
-    %% Fases futuras: pedidos e itens de pedido.
+    %% MVP presencial: catálogo, mesas, pedidos, itens e histórico de status.
+    %% Delivery, retirada e pagamento integrado permanecem fora do escopo do MVP.
     %% restaurant_domains é uma tabela opcional futura, ainda sem definição completa.
     %% Os atributos mantêm os nomes técnicos usados no código.
 
@@ -35,7 +35,7 @@ erDiagram
         identificador id PK
         identificador restaurant_id FK
         identificador user_id FK
-        papel role "owner (proprietário), manager (gerente), kitchen (cozinha)"
+        papel role "owner (administrador), manager (administrador), attendant (atendente), kitchen (cozinha)"
         data_hora created_at
         data_hora updated_at
     }
@@ -109,6 +109,16 @@ erDiagram
         data_hora updated_at
     }
 
+    HISTORICO_STATUS_PEDIDOS {
+        identificador id PK
+        identificador order_id FK
+        identificador changed_by_user_id FK "opcional; nulo para status inicial do pedido público"
+        situacao_pedido status
+        data_hora changed_at
+        data_hora created_at
+        data_hora updated_at
+    }
+
     DOMINIOS_ESTABELECIMENTO {
         identificador id PK
         identificador restaurant_id FK
@@ -125,6 +135,8 @@ erDiagram
     MESAS o|--o{ PEDIDOS : identifica_mesa
     PEDIDOS ||--|{ ITENS_PEDIDO : contem
     PRODUTOS o|--o{ ITENS_PEDIDO : referencia
+    PEDIDOS ||--|{ HISTORICO_STATUS_PEDIDOS : registra_status
+    USUARIOS o|--o{ HISTORICO_STATUS_PEDIDOS : altera_status
     ESTABELECIMENTOS ||--o{ DOMINIOS_ESTABELECIMENTO : pode_configurar
 
     %% Restrições e regras de integridade:
@@ -134,4 +146,6 @@ erDiagram
     %% Todo produto, categoria, mesa e pedido pertence a um único estabelecimento.
     %% A categoria do produto e a mesa do pedido devem pertencer ao mesmo estabelecimento.
     %% ITENS_PEDIDO.produto_id pode ser nulo; nome e preço preservam cópias do momento do pedido.
+    %% Todo pedido registra ao menos o status inicial; alterações guardam usuário e horário.
+    %% O cliente acompanha pelo public_id não sequencial; não há autenticação de cliente.
     %% Origem e situação do pedido aceitam somente os valores descritos acima.

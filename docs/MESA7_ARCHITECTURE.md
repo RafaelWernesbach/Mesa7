@@ -1,6 +1,6 @@
 # Mesa7 — Especificação de Produto e Arquitetura para Implementação
 
-> Documento-base do produto e referência para implementação incremental.<br>
+> Documento-base do produto e referência para implementação incremental.
 > Projeto acadêmico — Laboratório de Engenharia de Software — 2026/2.
 
 ---
@@ -9,21 +9,22 @@
 
 **Mesa7** é uma plataforma web para gestão de cardápio e pedidos de pequenos e médios estabelecimentos do setor gastronômico, como restaurantes, hamburguerias, lanchonetes e pizzarias.
 
-A proposta central é **unificar pedidos de mesa, delivery e retirada em um único fluxo operacional**, evitando que o estabelecimento precise controlar cada canal de forma isolada.
+A proposta central é organizar o pedido presencial iniciado no QR Code da mesa em um fluxo único, desde a escolha de produtos até a conclusão pela equipe.
 
-A visão de produto contempla o fluxo completo de cardápio e pedidos. A entrega atual mantém escopo deliberadamente limitado:
+O MVP presencial inclui:
 
-1. o usuário autorizado acessa a área administrativa do restaurante (tenant) ao qual pertence;
-2. o usuário cadastra e mantém produtos, categorias e mesas desse restaurante;
-3. o cliente visualiza o cardápio público do restaurante por slug ou pelo UUID de uma mesa ativa.
+1. o usuário autorizado mantém produtos, categorias e mesas do estabelecimento (tenant);
+2. o cliente abre o cardápio público da mesa sem criar uma conta;
+3. o cliente monta e revisa o carrinho, envia o pedido e recebe um código público para acompanhamento;
+4. a equipe consulta os pedidos do tenant e registra as transições de preparo até a conclusão ou cancelamento.
 
-O catálogo público é somente de consulta. Carrinho, checkout, criação de pedidos e operação permanecem em etapas futuras.
+Delivery, retirada, pagamento online e demais integrações permanecem fora deste MVP. Os dois documentos de requisitos em docs detalham a entrega.
 
 Mensagem central do produto:
 
 > **Seu restaurante. Sua marca. Seus pedidos. Seus clientes.**
 
-Proposta resumida:
+Visão de longo prazo do produto (fora do MVP presencial):
 
 > **Mesa + Delivery + Retirada → Um único sistema de pedidos.**
 
@@ -43,7 +44,7 @@ Isso pode gerar:
 - dificuldade de manter um canal digital próprio;
 - falta de uma visão única do fluxo de pedidos.
 
-O Mesa7 não pretende substituir todo o ecossistema de gestão de um restaurante. A visão de longo prazo é resolver o fluxo de cardápio, pedido e acompanhamento operacional; a entrega atual valida a administração multi-tenant do catálogo e sua apresentação pública.
+O Mesa7 não pretende substituir todo o ecossistema de gestão de um restaurante. O MVP valida o fluxo de pedido presencial, o catálogo multi-tenant e o acompanhamento operacional básico.
 
 ---
 
@@ -59,26 +60,26 @@ Como visão de produto, o Mesa7 poderá oferecer:
 - gestão do cardápio pelo estabelecimento;
 - arquitetura preparada para múltiplos restaurantes.
 
-Todos os pedidos convergem para a mesma entidade e o mesmo fluxo, independentemente de sua origem.
+Quando esses canais futuros forem implementados, os pedidos poderão convergir para a mesma entidade e para fluxos operacionais compartilhados.
 
 ```text
 Mesa via QR ────────┐
                     │
-Delivery ───────────┼──> Pedido ──> Painel operacional ──> Cozinha
+Delivery (futuro) ──┼──> Pedido ──> Painel operacional ──> Cozinha
                     │
-Retirada ───────────┘
+Retirada (futuro) ──┘
 ```
 
-O QR Code é apenas um canal de entrada.<br>
+O QR Code é apenas um canal de entrada.
 O **núcleo do sistema é o pedido unificado**.
 
 ---
 
-## 4. Objetivos da entrega atual
+## 4. Objetivos do MVP presencial
 
 ### 4.1 Objetivo principal
 
-Permitir que usuários autenticados de um restaurante mantenham os produtos do tenant em uma área administrativa e que clientes consultem o catálogo público correspondente.
+Permitir que clientes façam pedidos presenciais pelo QR Code da mesa e que a equipe do estabelecimento acompanhe e atualize esses pedidos, usando um catálogo administrado no tenant.
 
 ### 4.2 Objetivos específicos
 
@@ -89,21 +90,26 @@ Permitir que usuários autenticados de um restaurante mantenham os produtos do t
 - validar os dados do produto e permitir imagem opcional;
 - garantir que cada usuário acesse e altere somente produtos de restaurantes aos quais esteja vinculado;
 - exibir somente restaurantes ativos, categorias ativas e produtos disponíveis;
-- disponibilizar o cardápio por slug e por UUID público da mesa, sem criar pedidos;
-- gerar e imprimir um QR Code com a rota pública da mesa.
+- disponibilizar o cardápio público por slug e por UUID público da mesa;
+- gerar e imprimir um QR Code com a rota pública da mesa;
+- permitir adicionar, alterar e remover itens do carrinho da mesa;
+- validar e recalcular valores no servidor, gravar snapshots dos itens e limpar o carrinho após o pedido;
+- permitir acompanhar o pedido sem autenticação usando um identificador público não sequencial;
+- disponibilizar fila administrativa, detalhes, transições válidas e histórico de status.
 
-## 5. Fora do escopo da entrega atual
+## 5. Fora do escopo do MVP presencial
 
-Não implementar nesta entrega:
+Não implementar neste MVP presencial:
 
-- carrinho e checkout;
-- pedidos de mesa, delivery ou retirada;
-- dashboard operacional e transições de status;
-- interface administrativa para gerenciar outros domínios além de produtos, categorias e mesas;
+- pedidos para delivery ou retirada;
+- pagamento online integrado ou coleta de dados de pagamento;
+- rastreamento GPS, cálculo geográfico ou integração com entregadores;
+- integração com marketplaces, impressoras térmicas ou emissão fiscal;
+- interface administrativa para gerenciar domínios além do catálogo, mesas e operação de pedidos;
 - cadastro/autoprovisionamento de restaurantes pela interface pública;
 - gestão de usuários e papéis avançados dentro do tenant.
 
-Os itens abaixo também permanecem fora do escopo inicial do produto, salvo decisão futura:
+Também permanecem fora do escopo deste MVP, salvo decisão futura:
 
 - pagamento online integrado;
 - emissão fiscal;
@@ -331,6 +337,7 @@ Roles iniciais:
 ```text
 owner
 manager
+attendant
 kitchen
 ```
 
@@ -338,17 +345,24 @@ kitchen
 
 Pode:
 
-- editar dados do restaurante;
-- gerenciar usuários;
 - gerenciar cardápio;
-- visualizar e atualizar pedidos.
+- gerenciar mesas e QR Codes;
+- visualizar e operar pedidos.
 
 ### manager
 
 Pode:
 
 - gerenciar cardápio;
-- visualizar e atualizar pedidos.
+- gerenciar mesas e QR Codes;
+- visualizar e operar pedidos.
+
+### attendant
+
+Pode:
+
+- visualizar a fila e os detalhes dos pedidos do estabelecimento;
+- avançar ou cancelar pedidos conforme as transições permitidas.
 
 ### kitchen
 
@@ -363,7 +377,7 @@ Não criar sistema de permissões extremamente granular no MVP.
 
 O cliente **não precisa criar uma conta** no MVP.
 
-Para delivery/retirada, solicitar somente dados necessários.
+Para futuros fluxos de delivery/retirada, solicitar somente os dados necessários.
 
 Exemplos:
 
@@ -452,7 +466,7 @@ Regras:
 - o tenant é atribuído no servidor a partir do contexto autorizado, nunca de um `restaurant_id` livremente enviado pelo formulário;
 - nome e preço são obrigatórios; descrição e imagem são opcionais;
 - preço é armazenado como `decimal(10,2)` e validado no servidor;
-- `category_id` é opcional; categorias são usadas para organizar a visualização pública, mas seu CRUD administrativo continua futuro.
+- `category_id` é opcional; categorias organizam o cardápio público e podem ser gerenciadas no painel do estabelecimento.
 
 ## 10.4 RestaurantTable
 
@@ -607,7 +621,7 @@ Category
 
 Product
  ├── belongsTo Restaurant
- └── belongsTo Category (a partir da fase de categorias)
+ └── belongsTo Category (opcional)
 
 RestaurantTable
  ├── belongsTo Restaurant
@@ -659,7 +673,7 @@ ou usar escopo equivalente.
 
 # 13. Fluxo do cliente
 
-## 13.1 Entrada comum
+## 13.1 Cardápio geral
 
 ```text
 /r/{restaurant:slug}
@@ -675,21 +689,23 @@ Exibir:
 - produtos disponíveis;
 - descrição e contato, quando cadastrados.
 
-Exibir apenas restaurantes ativos, categorias ativas e produtos disponíveis. O cardápio é somente para consulta nesta etapa; não há carrinho ou criação de pedido.
+Exibir apenas restaurantes ativos, categorias ativas e produtos disponíveis. A rota geral é de consulta; ações de carrinho aparecem quando o cliente entra pelo contexto de uma mesa ativa.
 
-## 13.2 Contexto de mesa (pedido futuro)
+## 13.2 Contexto de mesa e pedido presencial
 
 ```text
-QR Code (geração futura)
+QR Code da mesa
   ↓
 /r/burger-do-ze/cardapio/{uuid-da-mesa}
   ↓
-Cardápio público no contexto da Mesa 07
+Cardápio da Mesa 07 → carrinho → revisão e observação
+  ↓
+Confirmação → pedido presencial → código público de acompanhamento
 ```
 
-O UUID da mesa deve ser resolvido dentro do restaurante indicado pelo slug; mesa inativa, inexistente ou pertencente a outro restaurante retorna 404. O código legível da mesa é uma referência administrativa. O contexto identifica a mesa, mas não cria pedido nesta etapa.
+O UUID da mesa deve ser resolvido dentro do restaurante indicado pelo slug; mesa inativa, inexistente ou pertencente a outro restaurante retorna 404. O código legível da mesa é uma referência administrativa. O pedido grava a mesa, o tenant, os itens e os preços calculados no servidor.
 
-## 13.3 Delivery
+## 13.3 Delivery (futuro; fora do MVP presencial)
 
 ```text
 /r/burger-do-ze
@@ -707,11 +723,11 @@ Confirmar
 Order source = delivery
 ```
 
-No MVP, `delivery_fee` pode ser zero ou valor fixo configurado no restaurante.
+Quando o canal de delivery for implementado, a taxa poderá ser zero ou um valor fixo configurado no restaurante.
 
 Não implementar cálculo geográfico no MVP.
 
-## 13.4 Retirada
+## 13.4 Retirada (futuro; fora do MVP presencial)
 
 ```text
 /r/burger-do-ze
@@ -753,7 +769,7 @@ Não é necessário WebSocket inicialmente.
 
 # 14. Carrinho
 
-O carrinho pode permanecer na sessão.
+O carrinho permanece na sessão e fica vinculado ao estabelecimento e à mesa.
 
 Estrutura conceitual:
 
@@ -777,7 +793,7 @@ Regras:
 - um carrinho só pode conter produtos de um restaurante;
 - preço não deve ser armazenado como fonte confiável no cliente;
 - recalcular preços no checkout;
-- validar disponibilidade no checkout;
+- validar mesa, tenant e disponibilidade dos produtos ao confirmar;
 - impedir quantidade <= 0;
 - limpar carrinho após criação bem-sucedida do pedido.
 
@@ -797,7 +813,7 @@ Responsabilidades:
 2. carregar produtos pelo restaurante atual;
 3. validar disponibilidade;
 4. recalcular subtotal;
-5. calcular taxa de entrega;
+5. recalcular subtotal e total do pedido de mesa, sem taxa de entrega;
 6. calcular total;
 7. iniciar transaction;
 8. criar `orders`;
@@ -829,14 +845,15 @@ Cancelamento:
 ```text
 new ───────> cancelled
 preparing ─> cancelled
+ready ─────> cancelled
 ```
 
 Não permitir:
 
 ```text
-completed -> preparing
-cancelled -> ready
-ready -> new
+completed -> qualquer outro status
+cancelled -> qualquer outro status
+ready -> new ou preparing
 ```
 
 Encapsular transições em:
@@ -853,21 +870,21 @@ A camada de UI não deve simplesmente atribuir qualquer status recebido.
 
 O painel administrativo será implementado com Filament e exigirá autenticação. O tenant do painel será um `Restaurant`; cada usuário só poderá selecionar restaurantes aos quais esteja vinculado.
 
-O único recurso administrativo de negócio desta etapa será Produtos. A navegação não deve antecipar links para pedidos, mesas, categorias ou configurações ainda não implementados. O cardápio público é uma tela Blade independente do painel.
+Os recursos administrativos do MVP são Produtos, Categorias, Mesas e Pedidos. O tenant é um `Restaurant`, selecionado entre os estabelecimentos aos quais o usuário está vinculado. O cardápio público e o acompanhamento de pedidos são telas Blade independentes do painel.
 
-URL conceitual:
+URL do painel:
 
 ```text
-/painel/restaurantes/{restaurant:slug}
+/admin/{restaurant:slug}
 ```
 
 O painel pode permitir a seleção de outro tenant autorizado pelo usuário. A resolução da URL/tenant e a autorização de acesso devem ser aplicadas no servidor.
 
-Navegação administrativa: Produtos.
+Navegação administrativa: Catálogo (Produtos e Categorias) e Salão (Mesas e Pedidos). O Resource Pedidos inclui detalhes, fila por tenant e ações de status.
 
 ---
 
-# 18. Dashboard operacional
+# 18. Operação de pedidos
 
 Exibir:
 
@@ -896,7 +913,7 @@ Informações mínimas por pedido:
 - total;
 - ações de mudança de status.
 
-Para o MVP, usar Livewire polling com intervalo razoável.
+O Resource Pedidos lista pedidos do tenant e inclui todos os status para permitir consulta do histórico. As ações operacionais aparecem conforme o status: iniciar preparo, marcar como pronto, finalizar ou cancelar. O modal de detalhes mostra itens, observações e o histórico cronológico de transições.
 
 ---
 
@@ -945,7 +962,7 @@ Mesa 07
 /r/burger-do-ze/mesa/M07
 ```
 
-A geração visual do QR pode ser adicionada após o fluxo estar pronto.
+Cada mesa ativa possui UUID público. A ação administrativa gera uma página HTML independente, com o QR, as informações da mesa e a URL pública por UUID. A página permite imprimir pelo navegador. O QR abre o cardápio da mesa e permite iniciar o fluxo de carrinho e pedido presencial.
 
 ---
 
@@ -1082,25 +1099,23 @@ Esconder botão não é autorização.
 
 # 26. Banco de dados
 
-Não é necessária migration adicional para a visualização pública: as tabelas e os campos abaixo já existem no schema alinhado ao ERD.
+As migrations definem as tabelas de catálogo, pedidos, itens e histórico de status usadas neste MVP.
 
-Tabelas usadas diretamente pela entrega atual:
+Tabelas usadas diretamente pelo MVP presencial:
 
 ```text
 users
 restaurants
 restaurant_user
-products
-```
-
-As tabelas abaixo também já fazem parte do modelo; `categories` e `restaurant_tables` são consultadas pelo cardápio nesta entrega, enquanto pedidos permanecem para fases futuras:
-
-```text
 categories
+products
 restaurant_tables
 orders
 order_items
+order_status_histories
 ```
+
+categories, restaurant_tables, orders e order_items armazenam o catálogo e os pedidos; order_status_histories registra o status inicial e cada transição.
 
 Não adicionar tabelas sem necessidade de domínio.
 
@@ -1142,7 +1157,7 @@ decimal(10,2)
 
 no banco.
 
-Quando pedidos forem implementados, nunca confiar no preço ou total enviado pelo frontend; o servidor recalcula os valores.
+Nunca confiar no preço ou total enviado pelo frontend; CreateOrder recalcula os valores usando preços atuais do catálogo.
 
 Pedidos não devem ser apagados pelo painel normal.
 
@@ -1189,7 +1204,7 @@ Não adicionar Redis, filas ou WebSockets sem necessidade imediata.
 
 Usar Pest.
 
-Na entrega atual, cobrir pelo menos:
+No MVP presencial, cobrir pelo menos:
 
 - usuário autenticado acessa somente tenants aos quais está vinculado;
 - CRUD de produtos respeita o tenant ativo;
@@ -1197,7 +1212,7 @@ Na entrega atual, cobrir pelo menos:
 - nome, preço e upload opcional são validados;
 - cardápio público respeita restaurante ativo, categoria ativa, disponibilidade do produto e contexto de mesa.
 
-Nas fases futuras, adicionar os testes de domínio correspondentes, incluindo:
+Os testes do MVP presencial cobrem os fluxos de pedido e operação descritos abaixo:
 
 ### Multi-tenancy
 
@@ -1213,14 +1228,14 @@ Nas fases futuras, adicionar os testes de domínio correspondentes, incluindo:
 
 ### Carrinho
 
-- só aceita produtos do mesmo restaurante;
-- quantidades inválidas são rejeitadas.
+- só aceita produtos do tenant e da mesa atuais;
+- quantidades inválidas ou acima do limite são rejeitadas;
 
-### Checkout
+### Confirmação do pedido presencial
 
 - pedido de mesa exige mesa válida;
-- delivery exige endereço;
-- pickup não exige endereço;
+- o MVP aceita somente pedidos de mesa; delivery não é oferecido;
+- não há fluxo de retirada no MVP;
 - total é recalculado no backend.
 
 ### Pedidos
@@ -1228,13 +1243,13 @@ Nas fases futuras, adicionar os testes de domínio correspondentes, incluindo:
 - status inicial é `new`;
 - transições válidas funcionam;
 - transições inválidas falham;
-- snapshot do item permanece após alteração do produto.
+- status, horário e responsável ficam no histórico;
+- snapshot do item permanece após alteração ou exclusão do produto.
 
 ### Autorização
 
-- kitchen não edita cardápio;
-- manager edita cardápio;
-- owner gerencia membros.
+- `owner` e `manager` administram catálogo e mesas e podem operar pedidos;
+- `attendant` e `kitchen` podem consultar e operar pedidos, sem acesso administrativo ao catálogo.
 
 ---
 
@@ -1251,12 +1266,13 @@ Product
 Seed mínimo de demonstração:
 
 ```text
-Restaurante: Mesa7 Demo
-Usuário owner
-alguns produtos
+Dois estabelecimentos de demonstração
+Usuários vinculados a um ou mais estabelecimentos com papéis distintos
+Categorias e pelo menos 20 produtos por estabelecimento
+Mesas ativas para testar QR, cardápio, carrinho e pedidos
 ```
 
-O seed inclui categorias e mesas demonstrativas para apresentar o cardápio público e validar a rota contextual de mesa. Pedidos permanecem sem dados de seed até a implementação do fluxo de checkout.
+Pedidos podem ser criados pelo fluxo público de QR para demonstrar a operação; não inserir pedidos de cliente fictícios automaticamente no seeder.
 
 A aplicação deve ficar demonstrável após:
 
@@ -1286,43 +1302,33 @@ php artisan migrate:fresh --seed
 
 ## Evolução por fases
 
-O cardápio público da Fase 3 é antecipado para a entrega atual, junto ao CRUD de produtos. Checkout, pedidos e operação continuam fases futuras.
+As Fases 1 a 5 formam o MVP presencial implementado: catálogo multi-tenant, cardápio público, QR de mesa, carrinho, pedidos e operação.
 
-### Fase 3 — Cardápio público (incluída na entrega atual)
+### Fase 3 — Catálogo, cardápio e QR (implementada)
 
-- rota pública por slug do estabelecimento;
-- visualização de categorias ativas e produtos disponíveis;
-- rota pública por slug e UUID da mesa;
-- views Blade com apresentação responsiva;
-- consultas sempre limitadas ao estabelecimento resolvido.
+- CRUD multi-tenant de categorias, produtos e mesas;
+- UUID e página imprimível de QR para mesas ativas;
+- cardápio público por slug e por UUID da mesa;
+- publicação somente de categorias ativas e produtos disponíveis.
 
-Não inclui carrinho, checkout ou criação de pedidos. Categorias e mesas são gerenciadas no painel; o QR abre somente o cardápio público.
+### Fase 4 — Carrinho e pedido presencial (implementada)
 
-### Fase 4 — Checkout
+- carrinho de sessão vinculado ao estabelecimento e à mesa;
+- adicionar, alterar e remover produtos e quantidades;
+- validação server-side de mesa, disponibilidade e tenant;
+- cálculo monetário no servidor e snapshots do produto no item;
+- criação transacional do pedido e registro do status inicial;
+- código público para acompanhamento sem conta;
+- delivery, retirada e pagamento online permanecem fora do MVP.
 
-- table;
-- delivery;
-- pickup;
-- `CreateOrder`;
-- snapshots;
-- cálculo server-side.
+### Fase 5 — Operação de pedidos (implementada)
 
-### Fase 5 — Painel operacional
-
-- board de pedidos;
-- status;
-- atualização;
-- filtros simples;
-- polling.
-
-### Fase 6 — Mesas e QR
-
-- CRUD administrativo de mesas no tenant;
-- UUID público por mesa e geração/impressão de QR Code;
-- rota do QR renderiza o cardápio no contexto da mesa;
-- pedido automaticamente vinculado.
-
-### Fase 7 — Refinamento
+- Resource Pedidos do Filament limitado ao tenant atual;
+- visualização de itens e histórico;
+- transições permitidas de pendente a preparo, pronto, finalizado ou cancelado;
+- identificação do usuário e horário em cada transição;
+- acompanhamento público do status com atualização periódica.
+### Fase 6 — Refinamento futuro
 
 - UI;
 - identidade Mesa7;
@@ -1333,7 +1339,7 @@ Não inclui carrinho, checkout ou criação de pedidos. Categorias e mesas são 
 
 ---
 
-# 33. Critérios de aceite da entrega atual
+# 33. Critérios de aceite do MVP presencial
 
 Esta entrega é considerada funcional quando:
 
@@ -1347,7 +1353,11 @@ Esta entrega é considerada funcional quando:
 8. um cliente consulta o menu de um estabelecimento ativo sem autenticação;
 9. produtos indisponíveis e categorias inativas não aparecem;
 10. URL com UUID de mesa exibe o mesmo cardápio e só aceita mesa ativa do estabelecimento informado;
-11. a visualização pública não cria pedido nem aceita identificadores de tenant enviados livremente pelo cliente.
+11. categorias e mesas são gerenciadas no tenant autorizado, com as permissões previstas;
+12. a página do QR mostra um código legível e imprimível, associado à URL pública da mesa;
+13. o cliente pode criar um pedido somente pelo contexto da mesa e acompanha o andamento por identificador público; o backend valida tenant, mesa, disponibilidade e preços;
+14. a equipe consulta pedidos do tenant, abre os detalhes e só executa as transições permitidas;
+15. cada mudança de status registra horário e responsável, e o pedido mantém snapshots dos itens;
 
 ---
 
@@ -1361,6 +1371,7 @@ Uma feature só é considerada concluída quando:
 - respeita autorização;
 - possui estado de erro;
 - possui teste quando a regra é relevante;
+- mantém pelo menos 85% de cobertura de linhas nas Actions de pedido, verificada por `composer coverage:orders` no CI;
 - passa Pint;
 - passa Larastan;
 - passa Pest.
@@ -1389,7 +1400,7 @@ Ao implementar:
 8. evitar lógica de negócio em Blade;
 9. evitar componentes Livewire gigantes;
 10. evitar overengineering;
-11. limitar o painel administrativo ao acesso do tenant e ao cadastro de produtos; manter o menu público somente para leitura;
+11. manter o painel administrativo limitado a produtos, categorias, mesas e operação de pedidos; o menu geral é somente para leitura e o fluxo de compra exige contexto de mesa;
 12. preservar isolamento multi-tenant em todas as queries;
 13. escrever testes para regras críticas;
 14. manter `composer test` verde;
@@ -1513,56 +1524,61 @@ O produto deve ser entendido como:
 
 > **uma plataforma própria de pedidos e operação digital para restaurantes.**
 
-O QR Code é um canal.<br>
-Delivery é um canal.<br>
-Retirada é um canal.<br>
-O cardápio é a interface de venda.<br>
-O painel é a interface operacional.<br>
-O pedido é o núcleo do domínio.<br>
-O multi-tenancy é a base arquitetural.<br>
+O QR Code é um canal.
+Delivery é um canal.
+Retirada é um canal.
+O cardápio é a interface de venda.
+O painel é a interface operacional.
+O pedido é o núcleo do domínio.
+O multi-tenancy é a base arquitetural.
 O SaaS é a visão de negócio.
 
 ---
 
-# 40. Resumo executivo da entrega atual
+# 40. Resumo executivo do MVP presencial
 
-Implementar primeiro:
-
-```text
-AUTHENTICATION
-+
-TENANT ADMIN (RESTAURANT)
-+
-FILAMENT PANEL
-+
-PRODUCT RESOURCE (CRUD)
-+
-PUBLIC MENU (READ-ONLY)
-```
-
-Fluxo desta entrega:
+Escopo implementado:
 
 ```text
-Usuário administrativo autenticado
-  ↓
-Seleciona um restaurante autorizado
-  ↓
-Área administrativa Filament do tenant
-  ↓
-Cadastro de produtos
-  ↓
-Cardápio público por slug ou UUID da mesa
+ADMINISTRAÇÃO MULTI-TENANT
++ CATÁLOGO: PRODUTOS E CATEGORIAS
++ MESAS E QR CODE IMPRIMÍVEL
++ CARDÁPIO PÚBLICO POR MESA
++ CARRINHO E PEDIDO PRESENCIAL
++ ACOMPANHAMENTO PÚBLICO
++ FILA, TRANSIÇÕES E HISTÓRICO DE STATUS
 ```
 
-Pedidos, checkout, gestão administrativa de categorias e mesas, geração de QR e operação pertencem a fases futuras. A entrega atual estará concluída quando CRUD e cardápio público funcionarem com validação, autorização, isolamento multi-tenant e testes.
+Fluxo do cliente:
+
+```text
+QR da mesa
+  ↓
+Cardápio → carrinho → revisão e observação
+  ↓
+Confirmação → pedido e código público
+  ↓
+Acompanhamento do preparo até o encerramento
+```
+
+Fluxo da equipe:
+
+```text
+Painel Filament do tenant
+  ↓
+Salão → Pedidos
+  ↓
+Detalhes → iniciar preparo → marcar pronto → finalizar ou cancelar
+```
+
+Delivery, retirada, pagamento online e integrações permanecem fora do MVP presencial.
 
 ---
-
 # 41. Stack de referência
 
 ## composer.json
 
-A implementação deve respeitar o `composer.json` atual do projeto e adicionar Filament como dependência necessária do painel administrativo. A base atual inclui:
+A implementação deve respeitar o `composer.json` atual do projeto, que já inclui Filament para o painel administrativo. A base atual inclui:
 
 ```text
 PHP ^8.3
@@ -1571,7 +1587,7 @@ Livewire 4.1
 Livewire Flux 2.13
 Livewire Blaze 1.0
 Laravel Fortify 1.37
-Filament (painel administrativo; versão compatível a definir na implementação)
+Filament 5 (painel administrativo)
 Pest 5
 Larastan 3.9
 Pint 1.27
