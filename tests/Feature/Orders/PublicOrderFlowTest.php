@@ -24,6 +24,28 @@ beforeEach(function () {
     ]);
 });
 
+it('returns current table orders for polling without exposing other tables', function () {
+    $product = $this->restaurant->products()->create(['name' => 'Café', 'price' => '5.00', 'is_available' => true]);
+    $otherTable = $this->restaurant->tables()->create(['name' => 'Mesa 08', 'code' => 'M08', 'is_active' => true]);
+    $order = app(CreateOrder::class)->execute($this->restaurant, $this->table, [$product->id => 1]);
+    $other = app(CreateOrder::class)->execute($this->restaurant, $otherTable, [$product->id => 1]);
+    $order->update(['status' => OrderStatus::Preparing]);
+
+    $this->getJson(publicOrderRoute('public.orders.index', $this->restaurant, $this->table))
+        ->assertOk()
+        ->assertHeader('Cache-Control', 'no-store, private')
+        ->assertJsonCount(1, 'orders')
+        ->assertJsonPath('orders.0.id', $order->public_id)
+        ->assertJsonPath('orders.0.status', 'Em preparo')
+        ->assertJsonPath('orders.0.url', route('public.orders.track', [$this->restaurant->slug, $order->public_id]))
+        ->assertDontSee($other->public_id);
+
+    $otherRestaurant = Restaurant::factory()->create();
+    $this->getJson(publicOrderRoute('public.orders.index', $otherRestaurant, $this->table))->assertNotFound();
+    $this->table->update(['is_active' => false]);
+    $this->getJson(publicOrderRoute('public.orders.index', $this->restaurant, $this->table))->assertNotFound();
+});
+
 it('lets a customer add, update and remove products in a table-specific cart', function () {
     $product = $this->restaurant->products()->create([
         'name' => 'Pão de queijo',
@@ -34,7 +56,7 @@ it('lets a customer add, update and remove products in a table-specific cart', f
     $this->post(publicOrderRoute('public.orders.cart.items.store', $this->restaurant, $this->table), [
         'product_id' => $product->getKey(),
         'quantity' => 2,
-    ])->assertRedirect(publicOrderRoute('public.orders.cart', $this->restaurant, $this->table));
+    ])->assertRedirect(route('public.menu.table', [$this->restaurant->slug, $this->table->uuid]));
 
     $this->get(publicOrderRoute('public.orders.cart', $this->restaurant, $this->table))
         ->assertOk()
@@ -56,6 +78,52 @@ it('lets a customer add, update and remove products in a table-specific cart', f
     $this->get(publicOrderRoute('public.orders.cart', $this->restaurant, $this->table))
         ->assertOk()
         ->assertSee('Seu carrinho está vazio.');
+});
+
+it('adds items through JSON and returns the updated cart count', function () {
+    $product = $this->restaurant->products()->create(['name' => 'Café', 'price' => '5.00', 'is_available' => true]);
+    $url = publicOrderRoute('public.orders.cart.items.store', $this->restaurant, $this->table);
+
+    $this->postJson($url, ['product_id' => $product->id, 'quantity' => 2])
+        ->assertOk()->assertJsonPath('count', 2);
+    $this->postJson($url, ['product_id' => $product->id, 'quantity' => 1])
+        ->assertOk()->assertJsonPath('count', 3);
+    $this->get(publicOrderRoute('public.orders.cart', $this->restaurant, $this->table))
+        ->assertSee('R$ 15,00');
+    $this->postJson($url, ['product_id' => $product->id, 'quantity' => 99])
+        ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+});
+
+it('checks a browser cart against current prices and availability before creating the order', function () {
+    $product = $this->restaurant->products()->create(['name' => 'Café', 'price' => '5.00', 'is_available' => true]);
+    $url = publicOrderRoute('public.orders.store', $this->restaurant, $this->table);
+    $items = [['product_id' => $product->id, 'quantity' => 2, 'price_cents' => 500]];
+
+    $product->update(['price' => '6.00']);
+    $this->postJson($url, ['items' => $items])->assertUnprocessable()->assertJsonValidationErrors('cart');
+    expect(Order::query()->count())->toBe(0);
+
+    $items[0]['price_cents'] = 600;
+    $product->update(['is_available' => false]);
+    $this->postJson($url, ['items' => $items])->assertUnprocessable()->assertJsonValidationErrors('cart');
+    expect(Order::query()->count())->toBe(0);
+
+    $product->update(['is_available' => true]);
+    $response = $this->postJson($url, ['items' => $items, 'total' => '0.01']);
+    $order = Order::query()->firstOrFail();
+    $response->assertOk()->assertJsonPath('url', route('public.orders.track', [$this->restaurant->slug, $order->public_id]));
+    expect($order->total)->toBe('12.00');
+});
+
+it('rejects invalid browser carts and products from another restaurant', function () {
+    $other = Restaurant::factory()->create();
+    $product = $other->products()->create(['name' => 'Chá', 'price' => '5.00', 'is_available' => true]);
+    $url = publicOrderRoute('public.orders.store', $this->restaurant, $this->table);
+    $item = ['product_id' => $product->id, 'quantity' => 1, 'price_cents' => 500];
+    $this->postJson($url, ['items' => [$item]])->assertUnprocessable()->assertJsonValidationErrors('cart');
+    $this->postJson($url, ['items' => [$item, $item]])->assertUnprocessable()->assertJsonValidationErrors('items.0.product_id');
+    $this->postJson($url, ['items' => []])->assertUnprocessable()->assertJsonValidationErrors('items');
+    expect(Order::query()->count())->toBe(0);
 });
 
 it('creates a server-priced order with product snapshots and public status tracking', function () {

@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property OrderStatus $status
+ * @property Carbon $placed_at
+ */
 #[Fillable([
     'restaurant_id',
     'restaurant_table_id',

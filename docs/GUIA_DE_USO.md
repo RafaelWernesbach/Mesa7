@@ -91,12 +91,14 @@ Como alternativa, o cardápio geral é acessível por `http://localhost:8000/r/m
 ### Fazer um pedido pela mesa
 
 1. Abra o QR da mesa ou sua URL `/r/{slug}/cardapio/{uuid}`. O carrinho só é habilitado no contexto de uma mesa ativa.
-2. Em cada produto, escolha a quantidade e clique em **Adicionar**.
+2. Em cada produto, escolha a quantidade e clique em **Adicionar**. Você permanece no cardápio, e o contador do carrinho é atualizado.
 3. Abra **Carrinho** para revisar os itens. Use **Atualizar** para alterar quantidades ou **Remover** para excluir um item.
 4. Escreva uma observação geral, se precisar, e clique em **Confirmar pedido**.
 5. A tela mostra o código público do pedido, os itens e o status atual. Guarde o link para consultar o andamento; enquanto estiver em preparo, a página atualiza a cada 15 segundos.
 
-O total é calculado no servidor com os preços vigentes quando o pedido é confirmado. Se um produto ficar indisponível antes da confirmação, revise o carrinho e remova-o. O MVP não coleta pagamento; o pagamento é feito diretamente no estabelecimento.
+Ao voltar ao cardápio pela URL com UUID da mesa, a seção **Pedidos da mesa** lista os pedidos e seus status, atualizados automaticamente a cada 15 segundos enquanto a página está visível. Escolha **Acompanhar** para reabrir os detalhes. A lista inclui pedidos finalizados e cancelados e fica visível a qualquer pessoa com acesso ao QR ou à URL da mesa.
+
+O carrinho fica salvo neste navegador, separado por estabelecimento e mesa. Adicionar, alterar e remover itens não exige acesso ao servidor; ao confirmar, o servidor valida os itens e recalcula o total. Se um preço mudar ou um produto ficar indisponível, revise o carrinho antes de tentar novamente. O MVP não coleta pagamento; o pagamento é feito diretamente no estabelecimento.
 
 ### Operar os pedidos
 
@@ -110,6 +112,22 @@ As mudanças aparecem na página pública de acompanhamento. Cada mudança regis
 ## 7. Papéis e acesso
 
 Os usuários vinculados a um estabelecimento podem selecionar aquele tenant no painel. Produtos, categorias e mesas são gerenciados pelos papéis `owner` e `manager`. Os papéis `owner`, `manager`, `attendant` e `kitchen` podem consultar e operar pedidos. `attendant` e `kitchen` não gerenciam o catálogo.
+
+Em **Configurações → Usuários**, o proprietário cadastra um usuário com senha inicial, vincula uma conta existente pelo e-mail, altera papéis ou desvincula pessoas. Vincular uma conta existente não altera sua senha. O estabelecimento deve manter pelo menos um proprietário. A senha inicial deve ser comunicada por um canal seguro e pode ser alterada nas configurações da conta.
+
+Em **Configurações → Aparência**, o proprietário define o nome, a logo e as cores principal e secundária das páginas públicas e do painel administrativo do estabelecimento. Alterar o nome não muda o identificador usado nas URLs. A logo aceita PNG, JPEG e WebP de até 2 MB; para exibi-la localmente é necessário `php artisan storage:link`. Recarregue o painel após salvar para aplicar a alteração nele.
+
+### Administração da plataforma
+
+O painel `/plataforma` permite ao superadministrador listar, cadastrar, editar e ativar ou desativar estabelecimentos. Na edição, **Vincular proprietário** associa uma conta existente ao estabelecimento. A desativação bloqueia o cardápio e o acesso ao painel do estabelecimento.
+
+O primeiro superadministrador deve ser definido manualmente por quem administra o banco. Após `php artisan migrate`, execute `php artisan tinker` e substitua o e-mail abaixo pelo de uma conta existente:
+
+```php
+\App\Models\User::where('email', 'admin@exemplo.com')->update(['is_super_admin' => true]);
+```
+
+Essa permissão é global e não pode ser concedida pela tela de usuários do estabelecimento. O superadministrador acessa `/plataforma/login`; para operar um estabelecimento no painel comum, precisa também estar vinculado a ele.
 
 ## 8. Problemas comuns
 

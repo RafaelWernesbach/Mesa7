@@ -37,7 +37,7 @@ class TransitionOrderStatus
             }
 
             $changedAt = now();
-            $lockedOrder->status = $nextStatus->value;
+            $lockedOrder->status = $nextStatus;
             if ($nextStatus === OrderStatus::Completed) {
                 $lockedOrder->completed_at = $changedAt;
             }

@@ -8,9 +8,11 @@ Este documento descreve os caminhos MVC do MVP presencial: catálogo, cardápio 
 - CRUD de categorias, produtos e mesas;
 - geração de UUID e QR Code por mesa;
 - cardápio Blade público por estabelecimento e por mesa;
-- carrinho de sessão vinculado ao tenant e à mesa;
+- carrinho no navegador vinculado ao tenant e à mesa, com sessão como alternativa sem JavaScript;
 - criação transacional e acompanhamento público de pedidos;
 - fila administrativa Filament com ações para atualizar status e histórico;
+- gestão de usuários e identidade visual pelo proprietário;
+- painel separado para administração global dos estabelecimentos;
 - validação de disponibilidade, tenant e valores no servidor.
 
 ## Visão do fluxo
@@ -30,7 +32,7 @@ flowchart LR
     Controller --> DB
     Controller --> Blade[resources/views/public/menu.blade.php]
     Blade --> Customer[Cliente consulta o cardápio]
-    Customer --> Cart[Carrinho da sessão]
+    Customer --> Cart[Carrinho no navegador]
     Cart --> PublicOrder[PublicOrderController]
     PublicOrder --> CreateOrder[CreateOrder Action]
     CreateOrder --> DB
@@ -49,10 +51,12 @@ flowchart LR
 | Controller | `app/Http/Controllers/PublicMenuController.php` | Resolve o estabelecimento/mesa, filtra menu público e escolhe os dados para a view. |
 | Controller | `app/Http/Controllers/PublicOrderController.php` | Gerencia carrinho, confirmação do pedido e acompanhamento público. |
 | Actions | `app/Actions/Orders/` | Cria pedidos com preço calculado no servidor e aplica transições autorizadas. |
-| Suporte | `app/Support/PublicTableCart.php`, `app/Support/Money.php` | Isola o carrinho por mesa e faz cálculos monetários sem float. |
+| Suporte | `resources/js/cart.js`, `app/Support/PublicTableCart.php`, `app/Support/Money.php` | Gerencia o carrinho local, preserva a alternativa de sessão sem JavaScript e faz cálculos monetários no servidor. |
 | Views públicas | `resources/views/public/` | Renderizam o cardápio e cada produto com Blade. |
 | CSS público | `resources/css/public-menu.css` | Estiliza a experiência pública, importada por `resources/css/app.css`. |
 | Recursos Filament | `app/Filament/Resources/` | Formulários, listagens e ações administrativas por tenant. |
+| Configuração do tenant | `app/Filament/Pages/` | Usuários e identidade visual do estabelecimento, acessíveis ao proprietário. |
+| Administração global | `app/Filament/Platform/`, `app/Providers/Filament/PlatformPanelProvider.php` | Painel de estabelecimentos acessível apenas a superadministradores. |
 | Policies | `app/Policies/` | Restringem catálogo e mesas a `owner`/`manager`; pedidos podem ser operados por `owner`, `manager`, `attendant` e `kitchen`. |
 | Models | `app/Models/` | Definem relações Eloquent, casts, snapshots e histórico de status. |
 | Migrations | `database/migrations/` | Definem estrutura, índices e integridade referencial. |
@@ -67,6 +71,9 @@ flowchart LR
 - `resources/views/admin/restaurant-tables/qr-code.blade.php`: exibe estabelecimento, mesa, código interno, URL, imagem QR e ação de impressão pelo navegador.
 - `OrderResource`: lista pedidos do tenant, mostra detalhes e oferece as transições permitidas.
 - `OrderPolicy`: autoriza a consulta e operação de pedidos conforme o tenant selecionado e o papel do usuário.
+- `ManageRestaurantUsers`: cadastra ou vincula pessoas e gerencia seus papéis no tenant, preservando ao menos um proprietário.
+- `EditRestaurantAppearance`: configura logo e cores exibidas nas páginas públicas.
+- `RestaurantResource` do painel da plataforma: cadastra e atualiza estabelecimentos, controla seu estado ativo e vincula proprietários existentes.
 
 Os três recursos declaram `restaurant` como relacionamento de posse do tenant. O Filament filtra seus registros pelo estabelecimento selecionado; políticas validam adicionalmente papel e propriedade ao acessar ou alterar um registro.
 
@@ -84,7 +91,7 @@ Os três recursos declaram `restaurant` como relacionamento de posse do tenant. 
 | `POST /r/{restaurant:slug}/cardapio/{uuid}/pedido` | `public.orders.store` | Confirma e grava o pedido com limitação de requisições. |
 | `GET /r/{restaurant:slug}/pedido/{publicId}` | `public.orders.track` | Acompanha o pedido sem autenticação. |
 
-O carrinho não aceita preço do navegador como fonte confiável. `CreateOrder` recarrega produtos pela relação do estabelecimento, valida disponibilidade, calcula valores inteiros em centavos, grava snapshots e cria o status inicial no histórico em uma transação. A equipe atualiza o pedido pela fila do Filament; cada transição permitida grava o ator e o horário.
+O carrinho usa `localStorage` separado por estabelecimento e UUID da mesa; alterações de itens não fazem requisições. Na confirmação, `CreateOrder` recarrega os produtos pela relação do estabelecimento, valida disponibilidade e os preços apresentados, calcula valores inteiros em centavos, grava snapshots e cria o status inicial no histórico em uma transação. Sem JavaScript, o carrinho de sessão continua disponível. A equipe atualiza o pedido pela fila do Filament; cada transição permitida grava o ator e o horário.
 
 Para a rota UUID, `PublicMenuController` busca a mesa pela relação `$restaurant->tables()`, pelo UUID e com `is_active = true`. A URL não permite resolver uma mesa pertencente a outro estabelecimento. Estabelecimento ou mesa inexistente/inativo retorna `404`.
 

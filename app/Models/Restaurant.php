@@ -63,6 +63,16 @@ class Restaurant extends Model
         return $this->hasMany(RestaurantDomain::class);
     }
 
+    public function menuPrimaryColor(): string
+    {
+        return preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $this->primary_color) ? $this->primary_color : '#E36A3C';
+    }
+
+    public function menuSecondaryColor(): string
+    {
+        return preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $this->secondary_color) ? $this->secondary_color : '#A6B29A';
+    }
+
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];

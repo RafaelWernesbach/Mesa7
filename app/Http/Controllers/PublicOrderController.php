@@ -7,6 +7,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Support\Money;
 use App\Support\PublicTableCart;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +15,25 @@ use Illuminate\View\View;
 
 class PublicOrderController extends Controller
 {
+    public function tableOrders(Restaurant $restaurant, string $uuid): JsonResponse
+    {
+        $table = $this->activeTable($restaurant, $uuid);
+        $orders = $restaurant->orders()
+            ->where('restaurant_table_id', $table->getKey())
+            ->latest('placed_at')
+            ->latest('id')
+            ->get(['public_id', 'status', 'placed_at']);
+
+        return response()->json([
+            'orders' => $orders->map(fn ($order): array => [
+                'id' => $order->public_id,
+                'status' => $order->status->label(),
+                'placed_at' => $order->placed_at->format('d/m/Y H:i'),
+                'url' => route('public.orders.track', [$restaurant->slug, $order->public_id]),
+            ]),
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
     public function showCart(
         Request $request,
         Restaurant $restaurant,
@@ -53,6 +73,12 @@ class PublicOrderController extends Controller
             'cartItems' => $cartItems,
             'subtotal' => Money::fromCents($subtotalCents),
             'canConfirm' => $canConfirm,
+            'legacyCart' => array_map(fn (array $item): array => [
+                'id' => (int) $item['product']->getKey(),
+                'name' => $item['product']->name,
+                'price_cents' => Money::toCents((string) $item['product']->price),
+                'quantity' => $item['quantity'],
+            ], $cartItems),
         ]);
     }
 
@@ -61,7 +87,7 @@ class PublicOrderController extends Controller
         Restaurant $restaurant,
         string $uuid,
         PublicTableCart $cart,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $table = $this->activeTable($restaurant, $uuid);
         $data = $request->validate([
             'product_id' => ['required', 'integer', 'min:1'],
@@ -85,7 +111,11 @@ class PublicOrderController extends Controller
         $items[$productId] = $quantity;
         $cart->save($request, $restaurant, $table, $items);
 
-        return redirect()->route('public.orders.cart', [
+        if ($request->expectsJson()) {
+            return response()->json(['count' => $cart->count($request, $restaurant, $table)]);
+        }
+
+        return redirect()->route('public.menu.table', [
             'restaurant' => $restaurant->slug,
             'uuid' => $table->uuid,
         ])->with('status', 'Produto adicionado ao carrinho.');
@@ -134,18 +164,38 @@ class PublicOrderController extends Controller
         string $uuid,
         PublicTableCart $cart,
         CreateOrder $createOrder,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $table = $this->activeTable($restaurant, $uuid);
         $data = $request->validate([
             'notes' => ['nullable', 'string', 'max:1000'],
+            'items' => ['sometimes', 'required', 'array', 'min:1', 'max:100'],
+            'items.*.product_id' => ['required_with:items', 'integer', 'min:1', 'distinct'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1', 'max:99'],
+            'items.*.price_cents' => ['required_with:items', 'integer', 'min:1', 'max:9999999999'],
         ]);
+        $items = $cart->items($request, $restaurant, $table);
+        $expectedPrices = null;
+        if (array_key_exists('items', $data)) {
+            $items = [];
+            $expectedPrices = [];
+            foreach ($data['items'] as $item) {
+                $productId = (int) $item['product_id'];
+                $items[$productId] = (int) $item['quantity'];
+                $expectedPrices[$productId] = (int) $item['price_cents'];
+            }
+        }
         $order = $createOrder->execute(
             $restaurant,
             $table,
-            $cart->items($request, $restaurant, $table),
+            $items,
             $data['notes'] ?? null,
+            $expectedPrices,
         );
         $cart->clear($request);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => route('public.orders.track', [$restaurant->slug, $order->public_id])]);
+        }
 
         return redirect()->route('public.orders.track', [
             'restaurant' => $restaurant->slug,

@@ -11,11 +11,15 @@
         <title>Pedido {{ $order->public_id }} | {{ $restaurant->name }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="public-menu" style="--menu-accent: {{ preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $restaurant->primary_color) ? $restaurant->primary_color : '#E36A3C' }}">
+    <body class="public-menu" style="--menu-accent: {{ $restaurant->menuPrimaryColor() }}; --menu-sage: {{ $restaurant->menuSecondaryColor() }}">
         <header class="menu-header">
             <div class="menu-header__inner">
                 <a class="restaurant-brand" href="{{ route('public.menu.show', $restaurant->slug) }}">
-                    <span class="restaurant-brand__mark" aria-hidden="true">{{ mb_substr($restaurant->name, 0, 1) }}</span>
+                    @if ($restaurant->logo_path)
+                        <img class="restaurant-brand__logo" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($restaurant->logo_path) }}" alt="Logo de {{ $restaurant->name }}">
+                    @else
+                        <span class="restaurant-brand__mark" aria-hidden="true">{{ mb_substr($restaurant->name, 0, 1) }}</span>
+                    @endif
                     <span class="restaurant-brand__name">{{ $restaurant->name }}</span>
                 </a>
                 <p class="table-context"><span class="table-context__dot"></span>{{ $order->restaurantTable?->name ?? 'Pedido presencial' }}</p>

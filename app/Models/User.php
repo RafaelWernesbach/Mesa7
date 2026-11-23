@@ -33,6 +33,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property bool $is_super_admin
+ * @property-read string|null $membership_role
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -51,12 +53,17 @@ class User extends Authenticatable implements FilamentUser, HasTenants, MustVeri
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $panel->getId() === 'admin' && $this->restaurants()->exists();
+        return match ($panel->getId()) {
+            'admin' => $this->restaurants()->where('restaurants.is_active', true)->exists(),
+            'platform' => (bool) $this->is_super_admin,
+            default => false,
+        };
     }
 
     /** @return BelongsToMany<Restaurant, $this> */
@@ -70,6 +77,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, MustVeri
     public function canAccessTenant(Model $tenant): bool
     {
         return $tenant instanceof Restaurant
+            && $tenant->is_active
             && $this->restaurants()->whereKey($tenant->getKey())->exists();
     }
 
@@ -80,7 +88,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, MustVeri
      */
     public function getTenants(Panel $panel): Collection
     {
-        return $this->restaurants;
+        return $this->restaurants()->where('restaurants.is_active', true)->get();
     }
 
     /**

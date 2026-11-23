@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Orders\CreateOrder;
+use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
@@ -129,4 +131,44 @@ it('does not resolve inactive tables or restaurants for table menus', function (
     $restaurant->update(['is_active' => false]);
     $this->get(route('public.menu.table-code', [$restaurant->slug, $table->code]))->assertNotFound();
     $this->get(route('public.menu.table', [$restaurant->slug, $table->uuid]))->assertNotFound();
+});
+
+it('shows the table orders and current statuses only on its UUID menu', function () {
+    $restaurant = Restaurant::factory()->create();
+    $otherRestaurant = Restaurant::factory()->create();
+    $table = $restaurant->tables()->create(['name' => 'Mesa 01', 'code' => 'M01', 'is_active' => true]);
+    $otherTable = $restaurant->tables()->create(['name' => 'Mesa 02', 'code' => 'M02', 'is_active' => true]);
+    $foreignTable = $otherRestaurant->tables()->create(['name' => 'Mesa 03', 'code' => 'M03', 'is_active' => true]);
+    $product = $restaurant->products()->create(['name' => 'Café', 'price' => '5.00', 'is_available' => true]);
+    $foreignProduct = $otherRestaurant->products()->create(['name' => 'Chá', 'price' => '6.00', 'is_available' => true]);
+    $createOrder = app(CreateOrder::class);
+    $first = $createOrder->execute($restaurant, $table, [$product->id => 1]);
+    $second = $createOrder->execute($restaurant, $table, [$product->id => 1]);
+    $second->update(['status' => OrderStatus::Completed]);
+    $other = $createOrder->execute($restaurant, $otherTable, [$product->id => 1]);
+    $foreign = $createOrder->execute($otherRestaurant, $foreignTable, [$foreignProduct->id => 1]);
+
+    $this->get(route('public.menu.table', [$restaurant->slug, $table->uuid]))
+        ->assertOk()
+        ->assertSee('Pedidos da mesa')
+        ->assertSee($first->public_id)
+        ->assertSee($second->public_id)
+        ->assertSee('Pendente')
+        ->assertSee('Finalizado')
+        ->assertSee(route('public.orders.track', [$restaurant->slug, $first->public_id]))
+        ->assertDontSee($other->public_id)
+        ->assertDontSee($foreign->public_id);
+
+    $this->get(route('public.menu.show', $restaurant->slug))->assertDontSee($first->public_id);
+    $this->get(route('public.menu.table-code', [$restaurant->slug, $table->code]))->assertDontSee($first->public_id);
+    $this->get(route('public.menu.table', [$restaurant->slug, $otherTable->uuid]))->assertDontSee($first->public_id);
+});
+
+it('shows an empty state when the table has no orders', function () {
+    $restaurant = Restaurant::factory()->create();
+    $table = $restaurant->tables()->create(['name' => 'Mesa vazia', 'code' => 'M01', 'is_active' => true]);
+
+    $this->get(route('public.menu.table', [$restaurant->slug, $table->uuid]))
+        ->assertOk()
+        ->assertSee('Ainda não há pedidos para esta mesa.');
 });

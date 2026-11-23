@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Support\PublicUploadPreview;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -58,7 +59,8 @@ class ProductForm
                     ->disk('public')
                     ->directory(fn (): string => 'products/'.Filament::getTenant()->getKey())
                     ->visibility('public')
-                    ->maxSize(2048),
+                    ->maxSize(2048)
+                    ->getUploadedFileUsing(fn (FileUpload $component, string $file, string|array|null $storedFileNames): ?array => PublicUploadPreview::fileInformation($component, $file, $storedFileNames)),
                 Toggle::make('is_available')
                     ->label('Disponível para venda')
                     ->default(true),

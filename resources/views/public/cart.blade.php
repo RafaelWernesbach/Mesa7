@@ -7,11 +7,15 @@
         <title>Carrinho | {{ $restaurant->name }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="public-menu" style="--menu-accent: {{ preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $restaurant->primary_color) ? $restaurant->primary_color : '#E36A3C' }}">
+    <body class="public-menu" data-cart-key="mesa7.cart.{{ $restaurant->getKey() }}.{{ $table->uuid }}" style="--menu-accent: {{ $restaurant->menuPrimaryColor() }}; --menu-sage: {{ $restaurant->menuSecondaryColor() }}">
         <header class="menu-header">
             <div class="menu-header__inner">
                 <a class="restaurant-brand" href="{{ route('public.menu.table', [$restaurant->slug, $table->uuid]) }}">
-                    <span class="restaurant-brand__mark" aria-hidden="true">{{ mb_substr($restaurant->name, 0, 1) }}</span>
+                    @if ($restaurant->logo_path)
+                        <img class="restaurant-brand__logo" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($restaurant->logo_path) }}" alt="Logo de {{ $restaurant->name }}">
+                    @else
+                        <span class="restaurant-brand__mark" aria-hidden="true">{{ mb_substr($restaurant->name, 0, 1) }}</span>
+                    @endif
                     <span class="restaurant-brand__name">{{ $restaurant->name }}</span>
                 </a>
                 <p class="table-context"><span class="table-context__dot"></span>{{ $table->name }}</p>
@@ -23,10 +27,35 @@
             <h1>Seu carrinho.</h1>
             <p class="order-page__intro">Confira quantidades e valores antes de enviar para o estabelecimento.</p>
 
+            <div data-server-cart>
             @if (session('status'))
                 <p class="order-notice" role="status">{{ session('status') }}</p>
             @endif
+            </div>
 
+            <section data-client-cart data-legacy-cart="{{ json_encode($legacyCart) }}" hidden>
+                <p class="order-error" data-client-cart-error role="alert"></p>
+                <div class="menu-empty" data-client-cart-empty hidden>
+                    <span class="menu-empty__mark" aria-hidden="true">+</span>
+                    <h2>Seu carrinho está vazio.</h2>
+                    <p>Volte ao cardápio e adicione os produtos que deseja pedir.</p>
+                    <a class="button" href="{{ route('public.menu.table', [$restaurant->slug, $table->uuid]) }}">Voltar ao cardápio</a>
+                </div>
+                <div data-client-cart-filled hidden>
+                    <ul class="cart-list" data-client-cart-items></ul>
+                    <div class="cart-summary"><span>Total estimado</span><span data-client-cart-total></span></div>
+                    <p class="order-page__intro">A disponibilidade e os preços serão conferidos ao confirmar.</p>
+                    <form class="checkout-form" data-client-checkout method="POST" action="{{ route('public.orders.store', ['restaurant' => $restaurant->slug, 'uuid' => $table->uuid]) }}">
+                        @csrf
+                        <label for="client-order-notes">Observação para o estabelecimento (opcional)</label>
+                        <textarea id="client-order-notes" name="notes" maxlength="1000"></textarea>
+                        <p>O pedido será enviado para {{ $table->name }}. O pagamento é feito diretamente no estabelecimento.</p>
+                        <button class="button" type="submit">Confirmar pedido</button>
+                    </form>
+                </div>
+            </section>
+
+            <div data-server-cart>
             @if ($errors->has('cart'))
                 <p class="order-error" role="alert">{{ $errors->first('cart') }}</p>
             @endif
@@ -78,6 +107,7 @@
                     <button class="button" type="submit" @disabled(! $canConfirm)>Confirmar pedido</button>
                 </form>
             @endif
+            </div>
         </main>
 
         <footer class="menu-footer"><span>{{ $restaurant->name }}</span><span>Cardápio digital <i aria-hidden="true">·</i> Mesa7</span></footer>

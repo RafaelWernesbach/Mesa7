@@ -8,7 +8,7 @@ As referências analisadas foram `Mesa7_Especificacao_Requisitos_MVP_Presencial_
 
 O fluxo principal está implementado: administração do catálogo e das mesas por tenant, cardápio público via QR de mesa, carrinho, confirmação de pedido, acompanhamento público e operação com histórico de status.
 
-**Não falta uma tabela ou migration funcional para concluir o fluxo principal do MVP.** O carrinho é temporário e fica na sessão; portanto, não precisa de tabela própria. A aplicação valida no servidor as regras que o banco ainda não impõe como restrições físicas. As melhorias de integridade listadas na seção 4 são reforços planejados, não impedimentos para a demonstração atual.
+**Não falta uma tabela ou migration funcional para concluir o fluxo principal do MVP.** O carrinho fica no navegador, com sessão como alternativa sem JavaScript; portanto, não precisa de tabela própria. A aplicação valida no servidor as regras que o banco ainda não impõe como restrições físicas. As melhorias de integridade listadas na seção 4 são reforços planejados, não impedimentos para a demonstração atual.
 
 ### Escopo desta versão
 
@@ -38,7 +38,7 @@ O fluxo principal está implementado: administração do catálogo e das mesas p
 | --- | --- | --- |
 | RF01 — acessar pelo QR da mesa ativa | `restaurant_tables.uuid`, `is_active` e rota por UUID escopada pelo slug do tenant | Implementado |
 | RF02 — consultar categorias e produtos disponíveis | `categories`, `products`, `is_active` e `is_available` | Implementado |
-| RF03 — adicionar, alterar e remover itens | Carrinho da sessão associado ao tenant e à mesa; nenhuma migration necessária | Implementado |
+| RF03 — adicionar, alterar e remover itens | Carrinho local associado ao tenant e à mesa; nenhuma migration necessária | Implementado |
 | RF04 — revisar e confirmar | `orders`, `order_items` e `order_status_histories`; valores recalculados no servidor e snapshots gravados em transação | Implementado |
 | RF05 — acompanhar sem conta | `orders.public_id` único e rota pública de acompanhamento | Implementado |
 | RF06 — autenticar e restringir o painel | `users`, `restaurant_user.role`, tenant do Filament e policies | Implementado |
@@ -116,7 +116,7 @@ As policies, relacionamentos Filament e Actions já validam o tenant durante o u
 | Retirada | Definir identificação do cliente, horário e estado operacional, caso necessário | Não usar `restaurant_table_id` como substituto impróprio da retirada |
 | Pagamento integrado | Modelar tentativa, provedor, estado, identificador externo e conciliação após decisão de segurança | Não armazenar dados de cartão nem marcar pedido como pago sem integração aprovada |
 | Domínio personalizado | Ativar `restaurant_domains`, validação de propriedade e resolução de tenant por host | Não criar gestão de domínio para a demonstração do MVP |
-| Persistência de carrinho entre dispositivos | Definir identidade/expiração antes de criar `carts` e `cart_items` | O carrinho atual é de sessão e atende o requisito |
+| Persistência de carrinho entre dispositivos | Definir identidade/expiração antes de criar `carts` e `cart_items` | O carrinho atual é local ao navegador |
 | Estoque/ERP/BI/cliente/fidelidade | Modelagem própria conforme requisitos futuros | Permanecem fora do MVP |
 
 ## 5. Manual de uso local
@@ -170,7 +170,7 @@ Em um banco de demonstração novo, todas as contas abaixo usam a senha local `p
 
 `owner` e `manager` acessam catálogo, mesas e pedidos. `attendant` e `kitchen` acessam a operação de pedidos, sem CRUD de catálogo. O seeder inclui pelo menos 20 produtos por estabelecimento, categorias e mesas de exemplo. Credenciais são exclusivamente para desenvolvimento; troque-as antes de qualquer implantação acessível externamente.
 
-Não há Resource para administrar usuários/vínculos pelo painel nesta versão; os papéis demonstrativos vêm do seeder.
+O proprietário pode administrar usuários e vínculos no painel do estabelecimento; os papéis demonstrativos iniciais vêm do seeder. O painel separado `/plataforma` permite ao superadministrador gerenciar estabelecimentos.
 
 ### 5.3 Acessar o painel e alternar tenant
 

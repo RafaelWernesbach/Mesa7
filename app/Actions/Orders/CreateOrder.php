@@ -16,12 +16,14 @@ class CreateOrder
 {
     /**
      * @param  array<int|string, mixed>  $cartItems  Untrusted product ID to quantity values.
+     * @param  array<int, int>|null  $expectedPrices  Prices shown to the customer, in cents.
      */
     public function execute(
         Restaurant $restaurant,
         RestaurantTable $table,
         array $cartItems,
         ?string $notes = null,
+        ?array $expectedPrices = null,
     ): Order {
         if ($cartItems === []) {
             throw ValidationException::withMessages([
@@ -29,7 +31,7 @@ class CreateOrder
             ]);
         }
 
-        return DB::transaction(function () use ($restaurant, $table, $cartItems, $notes): Order {
+        return DB::transaction(function () use ($restaurant, $table, $cartItems, $notes, $expectedPrices): Order {
             $lockedRestaurant = Restaurant::query()
                 ->whereKey($restaurant->getKey())
                 ->lockForUpdate()
@@ -72,6 +74,11 @@ class CreateOrder
 
             $subtotalCents = 0;
             foreach ($quantities as $productId => $quantity) {
+                if ($expectedPrices !== null && ($expectedPrices[$productId] ?? null) !== Money::toCents((string) $products->get($productId)->price)) {
+                    throw ValidationException::withMessages([
+                        'cart' => 'O preço de um produto mudou. Remova-o do carrinho e adicione-o novamente pelo cardápio para conferir o novo valor.',
+                    ]);
+                }
                 $subtotalCents += Money::toCents((string) $products->get($productId)->price) * $quantity;
             }
 

@@ -24,6 +24,7 @@ Route::prefix('r/{restaurant:slug}/cardapio/{uuid}')
     ->whereUuid('uuid')
     ->name('public.orders.')
     ->group(function () {
+        Route::get('/pedidos', [PublicOrderController::class, 'tableOrders'])->name('index');
         Route::get('/carrinho', [PublicOrderController::class, 'showCart'])->name('cart');
         Route::post('/carrinho/itens', [PublicOrderController::class, 'addItem'])->name('cart.items.store');
         Route::patch('/carrinho/itens/{product}', [PublicOrderController::class, 'updateItem'])

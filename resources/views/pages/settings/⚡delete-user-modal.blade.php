@@ -2,7 +2,10 @@
 
 use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
+use App\Models\Restaurant;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 new class extends Component {
@@ -19,7 +22,22 @@ new class extends Component {
             'password' => $this->currentPasswordRules(),
         ]);
 
-        tap(Auth::user(), $logout(...))->delete();
+        $user = Auth::user();
+        DB::transaction(function () use ($user, $logout): void {
+            $restaurantIds = $user->restaurants()->wherePivot('role', 'owner')->pluck('restaurants.id');
+            $restaurants = Restaurant::query()->whereKey($restaurantIds)->orderBy('id')->lockForUpdate()->get();
+
+            foreach ($restaurants as $restaurant) {
+                if ($restaurant->users()->wherePivot('role', 'owner')->count() <= 1) {
+                    throw ValidationException::withMessages([
+                        'password' => 'Antes de excluir sua conta, atribua outro proprietário aos seus estabelecimentos.',
+                    ]);
+                }
+            }
+
+            $logout();
+            $user->delete();
+        });
 
         $this->redirect('/', navigate: true);
     }

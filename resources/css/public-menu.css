@@ -27,6 +27,7 @@
 .cart-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid rgb(31 31 31 / 22%); font-size: 12px; font-weight: 700; }
 .cart-link:hover, .cart-link:focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 2px; }
 .cart-link__count { min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--menu-ink); color: var(--menu-paper); font-size: 11px; }
+.cart-feedback:not(:empty) { margin: 16px 0 0; padding: 12px 16px; background: var(--menu-sand); font-size: 13px; }
 
 .menu-intro { min-height: 330px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid rgb(31 31 31 / 12%); }
 .eyebrow { margin: 0 0 16px; color: var(--menu-accent); font-size: 11px; font-weight: 700; }
@@ -37,6 +38,20 @@
 .menu-intro__number { font-family: Georgia, 'Times New Roman', serif; font-size: 62px; line-height: 1; }
 .menu-intro__rule { width: 100%; height: 1px; margin: 13px 0; background: rgb(31 31 31 / 35%); }
 .menu-intro__aside-label { font-size: 10px; font-weight: 700; line-height: 1.4; }
+
+.table-orders { padding: 28px 0; border-bottom: 1px solid rgb(31 31 31 / 12%); }
+.table-orders__heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.table-orders__heading .eyebrow { margin-bottom: 6px; }
+.table-orders__heading h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 400; }
+.table-orders__heading > p, .table-orders__empty { margin: 0; color: #66645e; font-size: 12px; }
+.table-orders__item { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid rgb(31 31 31 / 12%); }
+.table-orders__item:hover .table-orders__action { text-decoration: underline; }
+.table-orders__item:focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 2px; }
+.table-orders__details { min-width: 0; flex: 1; display: grid; gap: 4px; font-size: 12px; }
+.table-orders__details strong { overflow-wrap: anywhere; }
+.table-orders__details > span { color: #66645e; }
+.table-orders__status { padding: 7px 10px; background: var(--menu-sand); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.table-orders__action { color: var(--menu-accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
 
 .category-nav { position: sticky; z-index: 2; top: 0; display: flex; gap: 8px; overflow-x: auto; padding: 15px max(24px, calc((100vw - 1080px) / 2)); background: var(--menu-paper); border-bottom: 1px solid rgb(31 31 31 / 12%); scrollbar-width: thin; }
 .category-nav a { flex: 0 0 auto; padding: 9px 13px; border: 1px solid rgb(31 31 31 / 18%); font-size: 12px; font-weight: 600; transition: background .15s ease, color .15s ease; }
@@ -59,6 +74,8 @@
 .product-item__body p { margin: 5px 0 0; color: #66645e; font-size: 12px; line-height: 1.5; }
 .product-item__price { flex: 0 0 auto; align-self: flex-start; padding-top: 1px; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .product-item__actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
+.product-item__feedback:not(:empty) { flex-basis: 100%; margin: 0; color: #5e5c55; font-size: 12px; }
+.product-item:has(.product-item__feedback:not(:empty)) { flex-wrap: wrap; }
 .quantity-input { width: 52px; min-height: 38px; padding: 6px; border: 1px solid rgb(31 31 31 / 28%); background: #fff; text-align: center; }
 .quantity-input:focus-visible, .button:focus-visible, textarea:focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 2px; }
 .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border: 1px solid var(--menu-ink); background: var(--menu-ink); color: var(--menu-paper) !important; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -115,6 +132,9 @@
     .menu-intro__aside { width: 96px; min-height: 130px; padding: 13px; }
     .menu-intro__number { font-size: 44px; }
     .menu-intro__aside-label { font-size: 8px; }
+    .table-orders__heading { align-items: start; flex-direction: column; gap: 8px; }
+    .table-orders__item { flex-wrap: wrap; gap: 10px; }
+    .table-orders__details { flex-basis: 100%; }
     .category-nav { padding-inline: 16px; }
     .menu-section { padding-top: 36px; }
     .product-list { grid-template-columns: minmax(0, 1fr); }

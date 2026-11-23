@@ -73,17 +73,16 @@ class PublicMenuController extends Controller
             ->orderBy('name')
             ->get();
 
-        $primaryColor = preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $restaurant->primary_color)
-            ? $restaurant->primary_color
-            : '#E36A3C';
-
         return response()->view('public.menu', [
             'restaurant' => $restaurant,
             'table' => $table,
             'categories' => $categories,
             'uncategorizedProducts' => $uncategorizedProducts,
-            'primaryColor' => $primaryColor,
+            'primaryColor' => $restaurant->menuPrimaryColor(),
             'cartCount' => $table === null ? 0 : $cart->count($request, $restaurant, $table),
+            'tableOrders' => $table !== null && $request->routeIs('public.menu.table')
+                ? $restaurant->orders()->where('restaurant_table_id', $table->getKey())->latest('placed_at')->latest('id')->get()
+                : collect(),
         ]);
     }
 }
